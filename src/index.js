@@ -494,7 +494,6 @@ function adminLinksPage(links, request, flash = "") {
       <tr>
         <td class="slug-cell">
           <a href="/${escHtml(l.slug)}" target="_blank" style="color:var(--accent2);text-decoration:none;">${fullUrl}</a>
-          <span class="click-badge" style="margin-left:8px;">${l.clicks}</span>
           <button type="button" class="btn btn-copy" onclick="copyLink(this,'${fullUrl}')">Copy</button>
           <form method="POST" action="/admin/delete" style="display:inline;">
             <input type="hidden" name="slug" value="${escHtml(l.slug)}">
