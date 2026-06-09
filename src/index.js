@@ -81,7 +81,7 @@ function htmlShell(title, bodyContent, activeTab = "") {
       font-display: swap;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 
     :root {
       --bg:        #0a0a0a;
@@ -162,8 +162,6 @@ function htmlShell(title, bodyContent, activeTab = "") {
       border-bottom: 2px solid transparent;
       margin-bottom: -1px;
       transition: color 0.15s, border-color 0.15s;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .tab-link:hover { color: var(--text); }
@@ -239,8 +237,6 @@ function htmlShell(title, bodyContent, activeTab = "") {
       border: none;
       text-decoration: none;
       transition: opacity 0.15s, transform 0.1s;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
     .btn:active { transform: scale(0.97); }
@@ -261,6 +257,17 @@ function htmlShell(title, bodyContent, activeTab = "") {
     }
 
     .btn-danger:hover { background: var(--danger); color: #fff; }
+
+    .btn-copy {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    .btn-copy:hover { background: var(--accent); color: #000; }
+    .btn-copy.copied { background: var(--accent); color: #000; }
 
     /* ── Links Table ── */
     .links-table {
@@ -427,6 +434,16 @@ function htmlShell(title, bodyContent, activeTab = "") {
 </head>
 <body>
 ${bodyContent}
+<script>
+  function copyLink(btn, url) {
+    navigator.clipboard.writeText(url).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+</script>
 </body>
 </html>`;
 }
@@ -476,7 +493,8 @@ function adminLinksPage(links, request, flash = "") {
         <td class="slug-cell"><a href="/${escHtml(l.slug)}" target="_blank" style="color:var(--accent2);text-decoration:none;">${request.headers.get("host")}/${escHtml(l.slug)}</a></td>
         <td class="target-cell" title="${escHtml(l.target)}">${escHtml(l.target)}</td>
         <td><span class="click-badge">${l.clicks}</span></td>
-        <td>
+        <td style="display:flex;gap:8px;align-items:center;">
+          <button type="button" class="btn btn-copy" onclick="copyLink(this,'https://${request.headers.get(\"host\")}/${escHtml(l.slug)}')">Copy</button>
           <form method="POST" action="/admin/delete" style="display:inline;">
             <input type="hidden" name="slug" value="${escHtml(l.slug)}">
             <button type="submit" class="btn btn-danger" onclick="return confirm('Delete /${escHtml(l.slug)}?')">Delete</button>
@@ -736,7 +754,7 @@ export default {
   <title>BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
     html, body {
       height: 100%;
       background: #0a0a0a;
