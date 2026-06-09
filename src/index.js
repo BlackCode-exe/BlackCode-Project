@@ -1,5 +1,5 @@
 // ============================================================
-// BLACK SHORTENER — Cloudflare Worker
+// BlackCode SHORTENER — Cloudflare Worker
 // ============================================================
 
 const COOKIE_NAME = "bcs_auth";
@@ -65,7 +65,7 @@ function htmlShell(title, bodyContent, activeTab = "") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} — BLACK Shortener</title>
+  <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <style>
     @font-face {
@@ -433,7 +433,7 @@ function loginPage(error = false) {
   const body = `
 <div class="login-wrap">
   <div class="login-box">
-    <div class="login-title"><span>BLACK</span> Shortener</div>
+    <div class="login-title"><span>BlackCode</span> Shortener</div>
     ${error ? `<div class="alert alert-error">Incorrect password.</div>` : ""}
     <form method="POST" action="/admin/login">
       <div class="form-group">
@@ -483,7 +483,7 @@ function adminLinksPage(links, flash = "") {
   const body = `
 <div class="wrapper">
   <header>
-    <div class="brand">BLACK <span>/</span> Shortener</div>
+    <div class="brand">BlackCode <span>/</span> Shortener</div>
   </header>
   <main>
     ${tabsHtml("links")}
@@ -510,7 +510,7 @@ function adminAddPage(flash = "") {
   const body = `
 <div class="wrapper">
   <header>
-    <div class="brand">BLACK <span>/</span> Shortener</div>
+    <div class="brand">BlackCode <span>/</span> Shortener</div>
   </header>
   <main>
     ${tabsHtml("add")}
@@ -551,7 +551,7 @@ async function adminStatsPage(links) {
   const body = `
 <div class="wrapper">
   <header>
-    <div class="brand">BLACK <span>/</span> Shortener</div>
+    <div class="brand">BlackCode <span>/</span> Shortener</div>
   </header>
   <main>
     ${tabsHtml("stats")}
@@ -607,7 +607,8 @@ export default {
     if (
       pathname.startsWith("/fonts/") ||
       pathname === "/favicon.ico" ||
-      pathname === "/logo.png"
+      pathname === "/logo.png" ||
+      pathname === "/BlackCode-Logo.png"
     ) {
       return env.ASSETS.fetch(request);
     }
@@ -723,8 +724,31 @@ export default {
     // ── Short link redirect ──
     const slug = pathname.slice(1); // remove leading /
     if (!slug) {
-      return new Response("BLACK Shortener", {
-        headers: { "Content-Type": "text/plain" },
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlackCode Shortener</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    img { display: block; max-width: 100%; }
+  </style>
+</head>
+<body>
+  <img src="/BlackCode-Logo.png" alt="BlackCode Code">
+</body>
+</html>`;
+      return new Response(html, {
+        headers: { "Content-Type": "text/html;charset=UTF-8" },
       });
     }
 
