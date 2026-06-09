@@ -1,0 +1,11 @@
+name = "blackcode-shortener"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = "./assets"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "KV_BINDING"
+id = "47bf846d367a43b382412b630f7a6e8a"
