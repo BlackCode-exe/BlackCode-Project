@@ -460,6 +460,7 @@ function adminLinkDetailPage(slug, data, host) {
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
   const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
   const targetShort = data.target.length > 40 ? data.target.slice(0, 37) + "..." : data.target;
+  const total    = data.clicks || 0;
 
   // Today clicks
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
