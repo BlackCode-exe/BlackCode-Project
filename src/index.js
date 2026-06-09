@@ -468,12 +468,12 @@ function tabsHtml(active) {
   </nav>`;
 }
 
-function adminLinksPage(links, flash = "") {
+function adminLinksPage(links, request, flash = "") {
   const rows = links.length === 0
     ? `<tr><td colspan="4"><div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div></td></tr>`
     : links.map(l => `
       <tr>
-        <td class="slug-cell">${escHtml(l.slug)}</td>
+        <td class="slug-cell"><a href="/${escHtml(l.slug)}" target="_blank" style="color:var(--accent2);text-decoration:none;">${request.headers.get("host")}/${escHtml(l.slug)}</a></td>
         <td class="target-cell" title="${escHtml(l.target)}">${escHtml(l.target)}</td>
         <td><span class="click-badge">${l.clicks}</span></td>
         <td>
@@ -660,7 +660,7 @@ export default {
       // GET /admin → links list
       if (pathname === "/admin" && method === "GET") {
         const links = await listLinks(env);
-        return new Response(adminLinksPage(links), {
+        return new Response(adminLinksPage(links, request), {
           headers: { "Content-Type": "text/html;charset=UTF-8" },
         });
       }
@@ -709,7 +709,7 @@ export default {
         const slug = (form.get("slug") || "").trim();
         if (slug) await deleteLink(env, slug);
         const links = await listLinks(env);
-        return new Response(adminLinksPage(links, flash("success", `Deleted: /${slug}`)), {
+        return new Response(adminLinksPage(links, request, flash("success", `Deleted: /${slug}`)), {
           headers: { "Content-Type": "text/html;charset=UTF-8" },
         });
       }
