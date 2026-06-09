@@ -487,21 +487,21 @@ function tabsHtml(active) {
 
 function adminLinksPage(links, request, flash = "") {
   const rows = links.length === 0
-    ? `<tr><td colspan="4"><div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div></td></tr>`
+    ? `<tr><td colspan="2"><div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div></td></tr>`
     : links.map(l => {
       const fullUrl = `https://${request.headers.get("host")}/${escHtml(l.slug)}`;
       return `
       <tr>
-        <td class="slug-cell"><a href="/${escHtml(l.slug)}" target="_blank" style="color:var(--accent2);text-decoration:none;">${fullUrl}</a></td>
-        <td class="target-cell" title="${escHtml(l.target)}">${escHtml(l.target)}</td>
-        <td><span class="click-badge">${l.clicks}</span></td>
-        <td style="display:flex;gap:8px;align-items:center;">
+        <td class="slug-cell">
+          <a href="/${escHtml(l.slug)}" target="_blank" style="color:var(--accent2);text-decoration:none;">${fullUrl}</a>
+          <span class="click-badge" style="margin-left:8px;">${l.clicks}</span>
           <button type="button" class="btn btn-copy" onclick="copyLink(this,'${fullUrl}')">Copy</button>
           <form method="POST" action="/admin/delete" style="display:inline;">
             <input type="hidden" name="slug" value="${escHtml(l.slug)}">
             <button type="submit" class="btn btn-danger" onclick="return confirm('Delete /${escHtml(l.slug)}?')">Delete</button>
           </form>
         </td>
+        <td class="target-cell" title="${escHtml(l.target)}">${escHtml(l.target)}</td>
       </tr>`;
     }).join("");
 
@@ -519,8 +519,6 @@ function adminLinksPage(links, request, flash = "") {
         <tr>
           <th>Back-half</th>
           <th>Target URL</th>
-          <th>Clicks</th>
-          <th></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
