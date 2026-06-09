@@ -459,7 +459,7 @@ function adminLinkDetailPage(slug, data, host) {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
   const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
-  const total    = data.clicks || 0;
+  const targetShort = data.target.length > 40 ? data.target.slice(0, 37) + "..." : data.target;
 
   // Today clicks
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
@@ -567,7 +567,7 @@ function adminLinkDetailPage(slug, data, host) {
     <div class="detail-header">
       <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
       <div class="detail-meta">
-        <span><span style="color:var(--muted);">Target:</span> <strong>${escHtml(data.target)}</strong></span>
+        <span><span style="color:var(--muted);">Target:</span> <strong title="${escHtml(data.target)}">${escHtml(targetShort)}</strong></span>
         <span><span style="color:var(--muted);">Created:</span> <strong>${created}</strong></span>
       </div>
       <div class="detail-actions">
