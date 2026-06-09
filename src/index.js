@@ -487,7 +487,7 @@ function tabsHtml(active) {
 
 function adminLinksPage(links, request, flash = "") {
   const rows = links.length === 0
-    ? `<tr><td colspan="2"><div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div></td></tr>`
+    ? `<tr><td colspan="3"><div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div></td></tr>`
     : links.map(l => {
       const fullUrl = `https://${request.headers.get("host")}/${escHtml(l.slug)}`;
       return `
@@ -501,6 +501,7 @@ function adminLinksPage(links, request, flash = "") {
           </form>
         </td>
         <td class="target-cell" title="${escHtml(l.target)}">${escHtml(l.target)}</td>
+        <td><span class="click-badge">${l.clicks}</span></td>
       </tr>`;
     }).join("");
 
@@ -518,6 +519,7 @@ function adminLinksPage(links, request, flash = "") {
         <tr>
           <th>Back-half</th>
           <th>Target URL</th>
+          <th>Clicks</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -563,7 +565,7 @@ async function adminStatsPage(links) {
   const topLinks    = [...links].sort((a, b) => b.clicks - a.clicks).slice(0, 5);
 
   const topRows = topLinks.length === 0
-    ? `<tr><td colspan="2"><div class="empty-state" style="padding:24px;"><strong>No data yet</strong></div></td></tr>`
+    ? `<tr><td colspan="3"><div class="empty-state" style="padding:24px;"><strong>No data yet</strong></div></td></tr>`
     : topLinks.map(l => `
       <tr>
         <td class="slug-cell">${escHtml(l.slug)}</td>
