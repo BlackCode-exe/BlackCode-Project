@@ -269,6 +269,83 @@ function htmlShell(title, bodyContent, activeTab = "") {
     .btn-copy:hover { background: var(--accent); color: #000; }
     .btn-copy.copied { background: var(--accent); color: #000; }
 
+    /* ── Link Cards ── */
+    .link-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .link-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+
+    .link-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .link-card-url {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--accent2);
+      text-decoration: none;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .link-card-url:hover { text-decoration: underline; }
+
+    .link-card-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .icon-btn.copied { color: var(--accent); border-color: var(--accent); }
+    .icon-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
+
+    .link-card-target {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 10px;
+    }
+
+    .link-card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .link-card-meta strong { color: var(--text); }
+
     /* ── Links Table ── */
     .links-table {
       width: 100%;
@@ -437,10 +514,8 @@ ${bodyContent}
 <script>
   function copyLink(btn, url) {
     navigator.clipboard.writeText(url).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = 'Copied!';
       btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+      setTimeout(() => { btn.classList.remove('copied'); }, 1500);
     });
   }
 </script>
@@ -486,23 +561,33 @@ function tabsHtml(active) {
 }
 
 function adminLinksPage(links, request, flash = "") {
-  const rows = links.length === 0
-    ? `<tr><td colspan="3"><div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div></td></tr>`
+  const cards = links.length === 0
+    ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div>`
     : links.map(l => {
       const fullUrl = `https://${request.headers.get("host")}/${escHtml(l.slug)}`;
+      const date = l.created ? new Date(l.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
       return `
-      <tr>
-        <td class="slug-cell">
-          <a href="/${escHtml(l.slug)}" target="_blank" style="color:var(--accent2);text-decoration:none;">${fullUrl}</a>
-          <button type="button" class="btn btn-copy" onclick="copyLink(this,'${fullUrl}')">Copy</button>
-          <form method="POST" action="/admin/delete" style="display:inline;">
-            <input type="hidden" name="slug" value="${escHtml(l.slug)}">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete /${escHtml(l.slug)}?')">Delete</button>
-          </form>
-        </td>
-        <td class="target-cell" title="${escHtml(l.target)}">${escHtml(l.target)}</td>
-        <td><span class="click-badge">${l.clicks}</span></td>
-      </tr>`;
+      <div class="link-card">
+        <div class="link-card-top">
+          <a href="/${escHtml(l.slug)}" target="_blank" class="link-card-url">${fullUrl}</a>
+          <div class="link-card-actions">
+            <button type="button" class="icon-btn" title="Copy" onclick="copyLink(this,'${fullUrl}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <form method="POST" action="/admin/delete" style="display:inline;">
+              <input type="hidden" name="slug" value="${escHtml(l.slug)}">
+              <button type="submit" class="icon-btn icon-btn-danger" title="Delete" onclick="return confirm('Delete /${escHtml(l.slug)}?')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="link-card-target">${escHtml(l.target)}</div>
+        <div class="link-card-meta">
+          <span>Total Clicks: <strong>${l.clicks}</strong></span>
+          <span>${date}</span>
+        </div>
+      </div>`;
     }).join("");
 
   const body = `
@@ -514,16 +599,7 @@ function adminLinksPage(links, request, flash = "") {
     ${tabsHtml("links")}
     ${flash}
     <div class="section-title">All Links</div>
-    <table class="links-table">
-      <thead>
-        <tr>
-          <th>Back-half</th>
-          <th>Target URL</th>
-          <th>Clicks</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="link-list">${cards}</div>
   </main>
   <footer><img src="/logo.png" alt="Logo"></footer>
 </div>`;
