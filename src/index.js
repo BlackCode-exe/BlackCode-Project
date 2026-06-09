@@ -854,7 +854,39 @@ export default {
 
     const data = await getLink(env, slug);
     if (!data) {
-      return new Response("Link not found.", { status: 404 });
+      const notFound = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Not Found</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+    @font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat-Bold.woff') format('woff'); font-weight: 700; }
+    @font-face { font-family: 'Montserrat'; src: url('/fonts/Montserrat-Regular.woff') format('woff'); font-weight: 400; }
+    html, body {
+      height: 100%;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+    }
+    .code { font-size: 96px; font-weight: 700; color: #e8ff00; line-height: 1; }
+    .msg  { font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="code">404</div>
+  <div class="msg">Link Not Found</div>
+</body>
+</html>`;
+      return new Response(notFound, { status: 404, headers: { "Content-Type": "text/html;charset=UTF-8" } });
     }
 
     // Increment click
