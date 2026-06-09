@@ -239,6 +239,8 @@ function htmlShell(title, bodyContent, activeTab = "") {
       border: none;
       text-decoration: none;
       transition: opacity 0.15s, transform 0.1s;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .btn:active { transform: scale(0.97); }
