@@ -1,4 +1,4 @@
-# BLACK Shortener
+# BLACKCODE Shortener
 
 Personal URL shortener built on Cloudflare Workers + KV.
 
