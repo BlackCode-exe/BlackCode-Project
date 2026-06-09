@@ -484,19 +484,16 @@ function adminLinkDetailPage(slug, data, host) {
   const deviceData   = deviceLabels.map(d => deviceCount[d]);
   const deviceColArr = deviceLabels.map(d => deviceColors[d] || "#888");
 
-  // ── Locations: top countries ──
-  const countryCount = {};
-  const cityCount    = {};
+  // ── Locations ──
+  const locMap = {};
   history.forEach(h => {
-    if (h.country) countryCount[h.country] = (countryCount[h.country] || 0) + 1;
-    if (h.city && h.city !== "Unknown") {
-      const key = `${h.city}, ${h.country}`;
-      cityCount[key] = (cityCount[key] || 0) + 1;
-    }
+    const country = h.country || "Unknown";
+    const city    = (h.city && h.city !== "Unknown") ? h.city : "-";
+    const key     = `${country}||${city}`;
+    if (!locMap[key]) locMap[key] = { country, city, count: 0 };
+    locMap[key].count++;
   });
-  const topCountries = Object.entries(countryCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const topCities    = Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxLoc = topCountries[0]?.[1] || 1;
+  const topLocs = Object.values(locMap).sort((a,b) => b.count - a.count).slice(0, 10);
 
   // ── Referrers ──
   const refCount = {};
@@ -507,19 +504,13 @@ function adminLinkDetailPage(slug, data, host) {
   const noData = (arr) => arr.length === 0
     ? `<div style="color:var(--muted);font-size:13px;padding:16px 0;">No data yet.</div>` : "";
 
-  const countryRows = topCountries.map(([k,v]) => `
-    <div class="breakdown-item">
-      <div class="breakdown-label">${escHtml(k)}</div>
-      <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${Math.round(v/maxLoc*100)}%"></div></div>
-      <div class="breakdown-count">${v}</div>
-    </div>`).join("") || noData(topCountries);
-
-  const cityRows = topCities.map(([k,v]) => `
-    <div class="breakdown-item">
-      <div class="breakdown-label">${escHtml(k)}</div>
-      <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${Math.round(v/maxLoc*100)}%"></div></div>
-      <div class="breakdown-count">${v}</div>
-    </div>`).join("") || noData(topCities);
+  const locationRows = topLocs.length === 0
+    ? `<tr><td colspan="2" style="color:var(--muted);font-size:13px;padding:16px 12px;">No data yet.</td></tr>`
+    : topLocs.map(l => `
+    <tr>
+      <td style="color:var(--text);">${escHtml(l.country)}</td>
+      <td style="color:var(--muted);">${escHtml(l.city)}</td>
+    </tr>`).join("");
 
   const refRows = topRefs.map(([k,v]) => `
     <div class="breakdown-item">
@@ -598,13 +589,11 @@ function adminLinkDetailPage(slug, data, host) {
     </div>
 
     <div class="section-block">
-      <div class="section-title">Locations — Countries</div>
-      <div class="breakdown-list">${countryRows}</div>
-    </div>
-
-    <div class="section-block">
-      <div class="section-title">Locations — Cities</div>
-      <div class="breakdown-list">${cityRows}</div>
+      <div class="section-title">Locations</div>
+      <table class="links-table">
+        <thead><tr><th>Country</th><th>City</th></tr></thead>
+        <tbody>${locationRows}</tbody>
+      </table>
     </div>
 
     <div class="section-block">
