@@ -670,7 +670,7 @@ export default {
       // POST /admin/add
       if (pathname === "/admin/add" && method === "POST") {
         const form   = await request.formData();
-        const slug   = (form.get("slug") || "").trim().toLowerCase();
+        const slug   = (form.get("slug") || "").trim();
         const target = (form.get("target") || "").trim();
 
         if (!slug || !target) {
