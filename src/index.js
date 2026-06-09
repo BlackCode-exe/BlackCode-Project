@@ -162,6 +162,8 @@ function htmlShell(title, bodyContent, activeTab = "") {
       border-bottom: 2px solid transparent;
       margin-bottom: -1px;
       transition: color 0.15s, border-color 0.15s;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .tab-link:hover { color: var(--text); }
@@ -744,7 +746,7 @@ export default {
   </style>
 </head>
 <body>
-  <img src="/BlackCode-Logo.png" alt="BlackCode Code">
+  <img src="/BlackCode-Logo.png" alt="BlackCode">
 </body>
 </html>`;
       return new Response(html, {
