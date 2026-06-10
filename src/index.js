@@ -7,26 +7,31 @@ const COOKIE_TTL  = 60 * 60 * 8; // 8 hours
 
 // ── Security Headers ─────────────────────────────────────────
 
-const SECURITY_HEADERS = {
-  "Content-Security-Policy":
-    "default-src 'self'; " +
-    "script-src 'self' https://cdnjs.cloudflare.com; " +
-    "style-src 'self'; " +
-    "font-src 'self'; " +
-    "img-src 'self' data:; " +
-    "connect-src 'none'; " +
-    "frame-ancestors 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';",
-  "X-Frame-Options":           "DENY",
-  "X-Content-Type-Options":    "nosniff",
-  "Referrer-Policy":           "strict-origin-when-cross-origin",
-  "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
-  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-};
+function makeSecurityHeaders(nonce = "") {
+  const scriptSrc = nonce
+    ? `'self' https://cdnjs.cloudflare.com 'nonce-${nonce}'`
+    : `'self' https://cdnjs.cloudflare.com`;
+  return {
+    "Content-Security-Policy":
+      `default-src 'self'; ` +
+      `script-src ${scriptSrc}; ` +
+      `style-src 'self'; ` +
+      `font-src 'self'; ` +
+      `img-src 'self' data:; ` +
+      `connect-src 'none'; ` +
+      `frame-ancestors 'none'; ` +
+      `base-uri 'self'; ` +
+      `form-action 'self';`,
+    "X-Frame-Options":           "DENY",
+    "X-Content-Type-Options":    "nosniff",
+    "Referrer-Policy":           "strict-origin-when-cross-origin",
+    "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  };
+}
 
-function htmlHeaders() {
-  return { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS };
+function htmlHeaders(nonce = "") {
+  return { "Content-Type": "text/html;charset=UTF-8", ...makeSecurityHeaders(nonce) };
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -169,7 +174,8 @@ function hamburgerBtn() {
 
 // ── HTML Shell ────────────────────────────────────────────────
 
-function htmlShell(title, bodyContent, inlineScript = "") {
+function htmlShell(title, bodyContent, inlineScript = "", nonce = "") {
+  const na = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -178,11 +184,11 @@ function htmlShell(title, bodyContent, inlineScript = "") {
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script${na} src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 ${bodyContent}
-<script src="/js/main.js"></script>${inlineScript ? `\n<script>${inlineScript}</script>` : ""}
+<script${na} src="/js/main.js"></script>${inlineScript ? `\n<script${na}>${inlineScript}</script>` : ""}
 </body>
 </html>`;
 }
@@ -345,7 +351,7 @@ ${sidebarHtml("stats")}
   return htmlShell("Stats", body);
 }
 
-function adminLinkDetailPage(slug, data, host) {
+function adminLinkDetailPage(slug, data, host, nonce = "") {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
   const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
@@ -519,7 +525,7 @@ if(ctx2 && ${devDataJson}.length>0){
   });
 }`;
 
-  return htmlShell(`Stats — ${slug}`, body, inlineScript);
+  return htmlShell(`Stats — ${slug}`, body, inlineScript, nonce);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
@@ -634,11 +640,12 @@ export default {
       // GET /admin/link/:slug
       const detailMatch = pathname.match(/^\/admin\/link\/(.+)$/);
       if (detailMatch && method === "GET") {
-        const slug = detailMatch[1];
-        const data = await getLink(env, slug);
+        const slug  = detailMatch[1];
+        const data  = await getLink(env, slug);
         if (!data) return redirect("/admin");
-        const host = request.headers.get("host");
-        return new Response(adminLinkDetailPage(slug, data, host), { headers: htmlHeaders() });
+        const host  = request.headers.get("host");
+        const nonce = crypto.randomUUID().replace(/-/g, "");
+        return new Response(adminLinkDetailPage(slug, data, host, nonce), { headers: htmlHeaders(nonce) });
       }
 
       return redirect("/admin");
