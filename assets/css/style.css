@@ -204,7 +204,8 @@ input:focus { border-color:var(--accent); }
 .num-card .num-value { font-size:28px; font-weight:700; color:var(--accent); line-height:1; }
 
 /* ── Chart ── */
-.chart-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:32px; position:relative; height:220px; }
+.chart-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:32px; position:relative; height:220px; overflow:hidden; }
+.chart-wrap-auto { height:auto; min-height:160px; overflow:hidden; }
 
 /* ── Breakdown lists ── */
 .breakdown-list { display:flex; flex-direction:column; gap:8px; }
