@@ -178,7 +178,7 @@ function htmlShell(title, bodyContent, inlineScript = "") {
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 ${bodyContent}
@@ -318,7 +318,7 @@ async function adminStatsPage(links) {
     ? `<tr><td colspan="2"><div class="empty-state" style="padding:24px;"><strong>No data yet</strong></div></td></tr>`
     : topLinks.map(l => `
       <tr>
-        <td><a href="/admin/link/${escHtml(l.slug)}" style="color:var(--accent2);text-decoration:none;font-weight:700;">${escHtml(l.slug)}</a></td>
+        <td><a href="/admin/link/${escHtml(l.slug)}" class="stats-link">${escHtml(l.slug)}</a></td>
         <td><span class="click-badge">${l.clicks || 0}</span></td>
       </tr>`).join("");
 
