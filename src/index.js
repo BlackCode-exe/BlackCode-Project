@@ -475,9 +475,9 @@ function adminLinkDetailPage(slug, data, host, nonce = "") {
 
     <div class="section-block">
       <div class="section-title">Devices</div>
-      <div class="chart-wrap" style="height:auto;min-height:160px;">
+      <div class="chart-wrap chart-wrap-auto">
         <div class="donut-wrap">
-          <div style="position:relative;width:140px;height:140px;flex-shrink:0;"><canvas id="deviceChart"></canvas></div>
+          <div style="position:relative;width:120px;height:120px;flex-shrink:0;"><canvas id="deviceChart"></canvas></div>
           <div class="donut-legend">${deviceLegend}</div>
         </div>
       </div>
