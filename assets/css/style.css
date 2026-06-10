@@ -220,6 +220,10 @@ input:focus { border-color:var(--accent); }
 .donut-legend-item { display:flex; align-items:center; gap:8px; font-size:12px; }
 .donut-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
+/* ── Stats link ── */
+.stats-link { color:var(--accent2); text-decoration:none; font-weight:700; }
+.stats-link:hover { text-decoration:underline; }
+
 /* ── Tables ── */
 .links-table { width:100%; border-collapse:collapse; }
 .links-table th { text-align:left; font-weight:700; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); padding:8px 12px; border-bottom:1px solid var(--border); }
