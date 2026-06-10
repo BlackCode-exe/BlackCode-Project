@@ -7,31 +7,26 @@ const COOKIE_TTL  = 60 * 60 * 8; // 8 hours
 
 // ── Security Headers ─────────────────────────────────────────
 
-function makeSecurityHeaders(nonce = "") {
-  const scriptSrc = nonce
-    ? `'self' https://cdnjs.cloudflare.com 'nonce-${nonce}'`
-    : `'self' https://cdnjs.cloudflare.com`;
-  return {
-    "Content-Security-Policy":
-      `default-src 'self'; ` +
-      `script-src ${scriptSrc}; ` +
-      `style-src 'self'; ` +
-      `font-src 'self'; ` +
-      `img-src 'self' data:; ` +
-      `connect-src 'none'; ` +
-      `frame-ancestors 'none'; ` +
-      `base-uri 'self'; ` +
-      `form-action 'self';`,
-    "X-Frame-Options":           "DENY",
-    "X-Content-Type-Options":    "nosniff",
-    "Referrer-Policy":           "strict-origin-when-cross-origin",
-    "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
-    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-  };
-}
+const SECURITY_HEADERS = {
+  "Content-Security-Policy":
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "font-src 'self'; " +
+    "img-src 'self' data:; " +
+    "connect-src 'none'; " +
+    "frame-ancestors 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self';",
+  "X-Frame-Options":           "DENY",
+  "X-Content-Type-Options":    "nosniff",
+  "Referrer-Policy":           "strict-origin-when-cross-origin",
+  "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+};
 
 function htmlHeaders(nonce = "") {
-  return { "Content-Type": "text/html;charset=UTF-8", ...makeSecurityHeaders(nonce) };
+  return { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS };
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -174,8 +169,7 @@ function hamburgerBtn() {
 
 // ── HTML Shell ────────────────────────────────────────────────
 
-function htmlShell(title, bodyContent, inlineScript = "", nonce = "") {
-  const na = nonce ? ` nonce="${nonce}"` : "";
+function htmlShell(title, bodyContent, inlineScript = "") {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -184,11 +178,11 @@ function htmlShell(title, bodyContent, inlineScript = "", nonce = "") {
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/style.css">
-  <script${na} src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 ${bodyContent}
-<script${na} src="/js/main.js"></script>${inlineScript ? `\n<script${na}>${inlineScript}</script>` : ""}
+<script src="/js/main.js"></script>${inlineScript ? `\n<script>${inlineScript}</script>` : ""}
 </body>
 </html>`;
 }
@@ -230,7 +224,7 @@ function adminLinksPage(links, request, flashMsg = "") {
               <button type="button" class="icon-btn icon-btn-edit" title="Edit" onclick="openEditModal('${escHtml(l.slug)}','${escHtml(l.target)}')">${ICON_EDIT}</button>
               <form method="POST" action="/admin/delete" style="display:inline;">
                 <input type="hidden" name="slug" value="${escHtml(l.slug)}">
-                <button type="submit" class="icon-btn icon-btn-danger" title="Delete" onclick="return confirm('Delete /${escHtml(l.slug)}?')">${ICON_TRASH}</button>
+                <button type="submit" class="icon-btn icon-btn-danger" title="Delete" onclick="return confirm('Delete /' + '${escHtml(l.slug)}' + '?')">${ICON_TRASH}</button>
               </form>
             </div>
           </div>
@@ -351,7 +345,7 @@ ${sidebarHtml("stats")}
   return htmlShell("Stats", body);
 }
 
-function adminLinkDetailPage(slug, data, host, nonce = "") {
+function adminLinkDetailPage(slug, data, host) {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
   const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
@@ -525,7 +519,7 @@ if(ctx2 && ${devDataJson}.length>0){
   });
 }`;
 
-  return htmlShell(`Stats — ${slug}`, body, inlineScript, nonce);
+  return htmlShell(`Stats — ${slug}`, body, inlineScript);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
@@ -644,8 +638,7 @@ export default {
         const data  = await getLink(env, slug);
         if (!data) return redirect("/admin");
         const host  = request.headers.get("host");
-        const nonce = crypto.randomUUID().replace(/-/g, "");
-        return new Response(adminLinkDetailPage(slug, data, host, nonce), { headers: htmlHeaders(nonce) });
+        return new Response(adminLinkDetailPage(slug, data, host), { headers: htmlHeaders() });
       }
 
       return redirect("/admin");
