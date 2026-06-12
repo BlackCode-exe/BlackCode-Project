@@ -263,6 +263,7 @@ function htmlShell(title, bodyContent, withCharts = false, nonce = "") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/styles.css">
@@ -635,8 +636,7 @@ export default {
     // Admin login
     if (pathname === "/admin/login") {
       if (method === "POST") {
-        const ip   = getClientIp(request);
-        // Check rate limit first
+        const ip = getClientIp(request);
         if (await isRateLimited(env, ip)) {
           return new Response(loginPage(true, true), { headers: htmlHeaders() });
         }
@@ -686,7 +686,7 @@ export default {
         if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return new Response(adminAddPage(flash("error", "Slug: only letters, numbers, hyphens, underscores."), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
         if (["admin","favicon.ico","logo.png","fonts","css","js"].includes(slug)) return new Response(adminAddPage(flash("error", `"${slug}" is reserved.`), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
         await saveLink(env, slug, target);
-        return new Response(adminAddPage(flash("success", `Link created: /${slug}`)), { headers: htmlHeaders() });
+        return new Response(adminAddPage(flash("success", `Link created: /${slug}`), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
       }
 
       // POST /admin/delete
@@ -709,12 +709,12 @@ export default {
         const redirectTo = form.get("redirect_to") || "";
 
         if (!newSlug || !newTarget) {
-          const links = await listLinks(env);
-          return new Response(adminLinksPage(links, request, flash("error", "Both fields are required.")), { headers: htmlHeaders() });
+          const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+          return new Response(adminLinksPage(links, request, flash("error", "Both fields are required."), csrf || ""), { headers: htmlHeaders() });
         }
         if (!/^[a-zA-Z0-9_-]+$/.test(newSlug)) {
-          const links = await listLinks(env);
-          return new Response(adminLinksPage(links, request, flash("error", "Slug: only letters, numbers, hyphens, underscores.")), { headers: htmlHeaders() });
+          const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+          return new Response(adminLinksPage(links, request, flash("error", "Slug: only letters, numbers, hyphens, underscores."), csrf || ""), { headers: htmlHeaders() });
         }
 
         const existing = await getLink(env, oldSlug);
@@ -735,11 +735,11 @@ export default {
       // GET /admin/link/:slug
       const detailMatch = pathname.match(/^\/admin\/link\/(.+)$/);
       if (detailMatch && method === "GET") {
-        const slug  = detailMatch[1];
-        const data  = await getLink(env, slug);
+        const slug      = detailMatch[1];
+        const data      = await getLink(env, slug);
         if (!data) return redirect("/admin");
-        const host  = request.headers.get("host");
-        const nonce = crypto.randomUUID().replace(/-/g, "");
+        const host      = request.headers.get("host");
+        const nonce     = crypto.randomUUID().replace(/-/g, "");
         const csrfToken = await getCsrfToken(request, env) || "";
         return new Response(adminLinkDetailPage(slug, data, host, nonce, csrfToken), { headers: htmlHeaders(nonce) });
       }
@@ -750,14 +750,14 @@ export default {
     // Root page
     const slug = pathname.slice(1);
     if (!slug) {
-      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>BlackCode Shortener</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css"></head><body class="root-page"><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Shortener</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css"></head><body class="root-page"><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
       return new Response(html, { headers: htmlHeaders() });
     }
 
     // Short link redirect
     const data = await getLink(env, slug);
     if (!data) {
-      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
+      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
       return new Response(notFound, { status:404, headers: htmlHeaders() });
     }
 
