@@ -178,12 +178,11 @@ function htmlShell(title, bodyContent, withCharts = false) {
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/styles.css">
-  ${withCharts ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>' : ''}
 </head>
 <body>
 ${bodyContent}
 <script src="/js/main.js"></script>
-${withCharts ? '<script src="/js/chart.js"></script>' : ''}
+${withCharts ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script><script src="/js/chart.js"></script>' : ''}
 </body>
 </html>`;
 }
