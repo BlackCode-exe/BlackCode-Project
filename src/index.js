@@ -2,8 +2,11 @@
 // BlackCode SHORTENER — Cloudflare Worker
 // ============================================================
 
-const COOKIE_NAME = "bcs_auth";
-const COOKIE_TTL  = 60 * 60 * 8; // 8 hours
+const COOKIE_NAME  = "bcs_auth";
+const COOKIE_TTL   = 60 * 60 * 8;    // 8 hours session
+const SESSION_TTL  = 60 * 60 * 8;    // 8 hours in seconds
+const MAX_ATTEMPTS = 5;               // max failed logins
+const LOCKOUT_TTL  = 60 * 15;        // 15 min lockout
 
 // ── Security Headers ─────────────────────────────────────────
 
@@ -37,11 +40,92 @@ function setCookie(value, maxAge) {
   return `${COOKIE_NAME}=${value}; Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=Strict; Secure`;
 }
 
-function isAuthenticated(request, env) {
+// Generate a random session token
+function generateToken() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Constant-time string comparison to prevent timing attacks
+async function safeCompare(a, b) {
+  const enc = new TextEncoder();
+  const ka   = await crypto.subtle.importKey("raw", enc.encode(a), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const kb   = await crypto.subtle.importKey("raw", enc.encode(b), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sa   = await crypto.subtle.sign("HMAC", ka, enc.encode("compare"));
+  const sb   = await crypto.subtle.sign("HMAC", kb, enc.encode("compare"));
+  const va   = new Uint8Array(sa);
+  const vb   = new Uint8Array(sb);
+  if (va.length !== vb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+  return diff === 0;
+}
+
+// Get client IP for rate limiting
+function getClientIp(request) {
+  return request.headers.get("CF-Connecting-IP") ||
+         request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
+         "unknown";
+}
+
+// Rate limiting helpers
+async function isRateLimited(env, ip) {
+  const key  = `rl:${ip}`;
+  const data = await env.KV_BINDING.get(key, { type: "json" });
+  if (!data) return false;
+  return data.attempts >= MAX_ATTEMPTS;
+}
+
+async function recordFailedAttempt(env, ip) {
+  const key  = `rl:${ip}`;
+  const data = await env.KV_BINDING.get(key, { type: "json" }) || { attempts: 0 };
+  data.attempts++;
+  await env.KV_BINDING.put(key, JSON.stringify(data), { expirationTtl: LOCKOUT_TTL });
+}
+
+async function clearRateLimit(env, ip) {
+  await env.KV_BINDING.delete(`rl:${ip}`);
+}
+
+// Session helpers
+function getSessionToken(request) {
   const cookie = request.headers.get("Cookie") || "";
   const match  = cookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
-  if (!match) return false;
-  return match[1] === env.ADMIN_PASSWORD;
+  return match ? match[1] : null;
+}
+
+async function createSession(env) {
+  const token = generateToken();
+  const csrf  = generateToken();
+  await env.KV_BINDING.put(`session:${token}`, csrf, { expirationTtl: SESSION_TTL });
+  return { token, csrf };
+}
+
+async function isAuthenticated(request, env) {
+  const token = getSessionToken(request);
+  if (!token) return false;
+  const csrf = await env.KV_BINDING.get(`session:${token}`);
+  return csrf !== null;
+}
+
+async function getCsrfToken(request, env) {
+  const token = getSessionToken(request);
+  if (!token) return null;
+  return await env.KV_BINDING.get(`session:${token}`);
+}
+
+async function validateCsrf(request, env) {
+  const form      = await request.clone().formData();
+  const submitted = form.get("_csrf") || "";
+  const expected  = await getCsrfToken(request, env);
+  if (!expected || !submitted) return false;
+  return await safeCompare(submitted, expected);
+}
+
+async function destroySession(request, env) {
+  const token = getSessionToken(request);
+  if (token) await env.KV_BINDING.delete(`session:${token}`);
 }
 
 function redirect(url, status = 302) {
@@ -192,12 +276,17 @@ ${withCharts ? `<script${n} src="/js/chartjs.min.js"></script><script${n} src="/
 
 // ── Pages ─────────────────────────────────────────────────────
 
-function loginPage(error = false) {
+function loginPage(error = false, locked = false) {
+  const msg = locked
+    ? `<div class="alert alert-error">Too many failed attempts. Try again in 15 minutes.</div>`
+    : error
+    ? `<div class="alert alert-error">Incorrect password.</div>`
+    : "";
   const body = `
 <div class="login-wrap">
   <div class="login-box">
     <div class="login-title"><span>BlackCode</span> Shortener</div>
-    ${error ? `<div class="alert alert-error">Incorrect password.</div>` : ""}
+    ${msg}
     <form method="POST" action="/admin/login">
       <div class="form-group">
         <label>Admin Password</label>
@@ -211,7 +300,7 @@ function loginPage(error = false) {
   return htmlShell("Login", body);
 }
 
-function adminLinksPage(links, request, flashMsg = "") {
+function adminLinksPage(links, request, flashMsg = "", csrf = "") {
   const host  = request.headers.get("host");
   const cards = links.length === 0
     ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div>`
@@ -226,6 +315,7 @@ function adminLinksPage(links, request, flashMsg = "") {
               <button type="button" class="icon-btn" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
               <button type="button" class="icon-btn icon-btn-edit" title="Edit" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}">${ICON_EDIT}</button>
               <form method="POST" action="/admin/delete" style="display:inline;">
+                <input type="hidden" name="_csrf" value="${csrf}">
                 <input type="hidden" name="slug" value="${escHtml(l.slug)}">
                 <button type="submit" class="icon-btn icon-btn-danger" title="Delete" data-delete="${escHtml(l.slug)}">${ICON_TRASH}</button>
               </form>
@@ -247,6 +337,7 @@ function adminLinksPage(links, request, flashMsg = "") {
   <div class="modal-box">
     <div class="modal-title">Edit Link</div>
     <form method="POST" action="/admin/edit">
+      <input type="hidden" name="_csrf" value="${csrf}">
       <input type="hidden" name="old_slug" id="edit_old_slug">
       <div class="form-group">
         <label>Back-half</label>
@@ -283,7 +374,7 @@ ${editModal}`;
   return htmlShell("Links", body);
 }
 
-function adminAddPage(flashMsg = "") {
+function adminAddPage(flashMsg = "", csrf = "") {
   const body = `
 ${sidebarHtml("add")}
 <div class="wrapper">
@@ -295,6 +386,7 @@ ${sidebarHtml("add")}
     ${flashMsg}
     <div class="section-title">Create New Short Link</div>
     <form method="POST" action="/admin/add" style="max-width:480px;">
+      <input type="hidden" name="_csrf" value="${csrf}">
       <div class="form-group">
         <label>Back-half (custom slug)</label>
         <input type="text" name="slug" placeholder="e.g. my-link" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
@@ -348,7 +440,7 @@ ${sidebarHtml("stats")}
   return htmlShell("Stats", body);
 }
 
-function adminLinkDetailPage(slug, data, host, nonce = "") {
+function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
   const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
@@ -422,6 +514,7 @@ function adminLinkDetailPage(slug, data, host, nonce = "") {
   <div class="modal-box">
     <div class="modal-title">Edit Link</div>
     <form method="POST" action="/admin/edit">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="old_slug" value="${escHtml(slug)}">
       <input type="hidden" name="redirect_to" value="detail">
       <div class="form-group">
@@ -534,11 +627,20 @@ export default {
     // Admin login
     if (pathname === "/admin/login") {
       if (method === "POST") {
+        const ip   = getClientIp(request);
+        // Check rate limit first
+        if (await isRateLimited(env, ip)) {
+          return new Response(loginPage(true, true), { headers: htmlHeaders() });
+        }
         const form = await request.formData();
         const pwd  = form.get("password") || "";
-        if (pwd === env.ADMIN_PASSWORD) {
-          return new Response(null, { status:302, headers:{ Location:"/admin", "Set-Cookie":setCookie(env.ADMIN_PASSWORD, COOKIE_TTL), ...makeSecurityHeaders() } });
+        const ok   = await safeCompare(pwd, env.ADMIN_PASSWORD);
+        if (ok) {
+          await clearRateLimit(env, ip);
+          const { token, csrf } = await createSession(env);
+          return new Response(null, { status:302, headers:{ Location:"/admin", "Set-Cookie":setCookie(token, COOKIE_TTL), ...makeSecurityHeaders() } });
         }
+        await recordFailedAttempt(env, ip);
         return new Response(loginPage(true), { headers: htmlHeaders() });
       }
       return new Response(loginPage(), { headers: htmlHeaders() });
@@ -546,47 +648,52 @@ export default {
 
     // Admin logout
     if (pathname === "/admin/logout") {
+      await destroySession(request, env);
       return new Response(null, { status:302, headers:{ Location:"/admin/login", "Set-Cookie":setCookie("",0), ...makeSecurityHeaders() } });
     }
 
     // Admin area
     if (pathname.startsWith("/admin")) {
-      if (!isAuthenticated(request, env)) return redirect("/admin/login");
+      if (!await isAuthenticated(request, env)) return redirect("/admin/login");
 
       // GET /admin
       if (pathname === "/admin" && method === "GET") {
-        const links = await listLinks(env);
-        return new Response(adminLinksPage(links, request), { headers: htmlHeaders() });
+        const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+        return new Response(adminLinksPage(links, request, "", csrf || ""), { headers: htmlHeaders() });
       }
 
       // GET /admin/add
       if (pathname === "/admin/add" && method === "GET") {
-        return new Response(adminAddPage(), { headers: htmlHeaders() });
+        const csrf = await getCsrfToken(request, env);
+        return new Response(adminAddPage("", csrf || ""), { headers: htmlHeaders() });
       }
 
       // POST /admin/add
       if (pathname === "/admin/add" && method === "POST") {
+        if (!await validateCsrf(request, env)) return new Response("Invalid CSRF token.", { status: 403, headers: makeSecurityHeaders() });
         const form   = await request.formData();
         const slug   = (form.get("slug") || "").trim();
         const target = (form.get("target") || "").trim();
-        if (!slug || !target) return new Response(adminAddPage(flash("error", "Both fields are required.")), { headers: htmlHeaders() });
-        if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return new Response(adminAddPage(flash("error", "Slug: only letters, numbers, hyphens, underscores.")), { headers: htmlHeaders() });
-        if (["admin","favicon.ico","logo.png","fonts","css","js"].includes(slug)) return new Response(adminAddPage(flash("error", `"${slug}" is reserved.`)), { headers: htmlHeaders() });
+        if (!slug || !target) return new Response(adminAddPage(flash("error", "Both fields are required."), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
+        if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return new Response(adminAddPage(flash("error", "Slug: only letters, numbers, hyphens, underscores."), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
+        if (["admin","favicon.ico","logo.png","fonts","css","js"].includes(slug)) return new Response(adminAddPage(flash("error", `"${slug}" is reserved.`), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
         await saveLink(env, slug, target);
         return new Response(adminAddPage(flash("success", `Link created: /${slug}`)), { headers: htmlHeaders() });
       }
 
       // POST /admin/delete
       if (pathname === "/admin/delete" && method === "POST") {
+        if (!await validateCsrf(request, env)) return new Response("Invalid CSRF token.", { status: 403, headers: makeSecurityHeaders() });
         const form = await request.formData();
         const slug = (form.get("slug") || "").trim();
         if (slug) await deleteLink(env, slug);
-        const links = await listLinks(env);
-        return new Response(adminLinksPage(links, request, flash("success", `Deleted: /${slug}`)), { headers: htmlHeaders() });
+        const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+        return new Response(adminLinksPage(links, request, flash("success", `Deleted: /${slug}`), csrf || ""), { headers: htmlHeaders() });
       }
 
       // POST /admin/edit
       if (pathname === "/admin/edit" && method === "POST") {
+        if (!await validateCsrf(request, env)) return new Response("Invalid CSRF token.", { status: 403, headers: makeSecurityHeaders() });
         const form       = await request.formData();
         const oldSlug    = (form.get("old_slug") || "").trim();
         const newSlug    = (form.get("slug") || "").trim();
@@ -607,8 +714,8 @@ export default {
         await saveLink(env, newSlug, newTarget, existing);
 
         if (redirectTo === "detail") return redirect(`/admin/link/${newSlug}`);
-        const links = await listLinks(env);
-        return new Response(adminLinksPage(links, request, flash("success", `Updated: /${newSlug}`)), { headers: htmlHeaders() });
+        const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+        return new Response(adminLinksPage(links, request, flash("success", `Updated: /${newSlug}`), csrf || ""), { headers: htmlHeaders() });
       }
 
       // GET /admin/stats
@@ -625,7 +732,8 @@ export default {
         if (!data) return redirect("/admin");
         const host  = request.headers.get("host");
         const nonce = crypto.randomUUID().replace(/-/g, "");
-        return new Response(adminLinkDetailPage(slug, data, host, nonce), { headers: htmlHeaders(nonce) });
+        const csrfToken = await getCsrfToken(request, env) || "";
+        return new Response(adminLinkDetailPage(slug, data, host, nonce, csrfToken), { headers: htmlHeaders(nonce) });
       }
 
       return redirect("/admin");
