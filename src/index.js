@@ -438,6 +438,12 @@ function adminLinkDetailPage(slug, data, host) {
   </div>
 </div>`;
 
+  const chartData   = JSON.stringify(days30);
+  const chartLabels = JSON.stringify(labels30);
+  const devDataJson = JSON.stringify(deviceData);
+  const devLabJson  = JSON.stringify(deviceLabels);
+  const devColJson  = JSON.stringify(deviceColArr);
+
   const body = `
 <div class="wrapper">
   <header>
@@ -496,13 +502,7 @@ function adminLinkDetailPage(slug, data, host) {
 ${sidebarHtml("")}
 ${editModal}`;
 
-  const chartData   = JSON.stringify(days30);
-  const chartLabels = JSON.stringify(labels30);
-  const devDataJson = JSON.stringify(deviceData);
-  const devLabJson  = JSON.stringify(deviceLabels);
-  const devColJson  = JSON.stringify(deviceColArr);
-
-  return htmlShell(`Stats — \${slug}`, body, true);
+  return htmlShell(`Stats — ${slug}`, body, true);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
