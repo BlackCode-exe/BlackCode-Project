@@ -1,12 +1,20 @@
-// ── Chart init — data injected via data-* attributes ─────────
+a// ── Chart init — data injected via base64-encoded data-* attributes ──
 
 (function () {
+  function decode(b64) {
+    try {
+      return JSON.parse(decodeURIComponent(escape(atob(b64))));
+    } catch (e) {
+      return [];
+    }
+  }
+
   const chartEl  = document.getElementById('clickChart');
   const deviceEl = document.getElementById('deviceChart');
 
   if (chartEl) {
-    const labels = JSON.parse(chartEl.dataset.labels);
-    const values = JSON.parse(chartEl.dataset.values);
+    const labels = decode(chartEl.dataset.labels);
+    const values = decode(chartEl.dataset.values);
     new Chart(chartEl, {
       type: 'bar',
       data: {
@@ -24,17 +32,24 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { grid: { color: '#1a1a1a' }, ticks: { color: '#666', font: { size: 10 }, maxTicksLimit: 10 } },
-          y: { grid: { color: '#1a1a1a' }, ticks: { color: '#666', font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
+          x: {
+            grid: { color: '#1a1a1a' },
+            ticks: { color: '#666', font: { size: 10 }, maxTicksLimit: 10 }
+          },
+          y: {
+            grid: { color: '#1a1a1a' },
+            ticks: { color: '#666', font: { size: 10 }, stepSize: 1 },
+            beginAtZero: true
+          }
         }
       }
     });
   }
 
   if (deviceEl) {
-    const labels = JSON.parse(deviceEl.dataset.labels);
-    const values = JSON.parse(deviceEl.dataset.values);
-    const colors = JSON.parse(deviceEl.dataset.colors);
+    const labels = decode(deviceEl.dataset.labels);
+    const values = decode(deviceEl.dataset.values);
+    const colors = decode(deviceEl.dataset.colors);
     if (values.length > 0) {
       new Chart(deviceEl, {
         type: 'doughnut',
