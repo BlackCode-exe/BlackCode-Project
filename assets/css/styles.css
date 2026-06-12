@@ -206,6 +206,7 @@ input:focus { border-color:var(--accent); }
 /* ── Chart ── */
 .chart-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:32px; position:relative; height:220px; overflow:hidden; }
 .chart-wrap-auto { height:auto; min-height:160px; overflow:hidden; }
+.donut-canvas-wrap { position:relative; width:120px; height:120px; flex-shrink:0; max-width:120px; max-height:120px; }
 
 /* ── Breakdown lists ── */
 .breakdown-list { display:flex; flex-direction:column; gap:8px; }
@@ -258,3 +259,18 @@ input:focus { border-color:var(--accent); }
 footer { border-top:1px solid var(--border); padding:24px 32px; display:flex; justify-content:center; align-items:center; }
 footer img { width:200px; height:auto; opacity:0.7; transition:opacity 0.2s; }
 footer img:hover { opacity:1; }
+
+/* ── Root page ── */
+body.root-page { height:100%; background:#0a0a0a; display:flex; align-items:center; justify-content:center; }
+body.root-page img { display:block; max-width:100%; }
+
+/* ── 404 page ── */
+body.not-found-page {
+  height:100%; background:#0a0a0a; color:#f0f0f0;
+  font-family:'Montserrat',sans-serif;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; gap:16px;
+}
+body.not-found-page .code { font-size:96px; font-weight:700; color:#e8ff00; line-height:1; }
+body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#666; }
