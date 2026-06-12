@@ -440,11 +440,12 @@ function adminLinkDetailPage(slug, data, host, nonce = "") {
   </div>
 </div>`;
 
-  const chartData   = JSON.stringify(days30);
-  const chartLabels = JSON.stringify(labels30);
-  const devDataJson = JSON.stringify(deviceData);
-  const devLabJson  = JSON.stringify(deviceLabels);
-  const devColJson  = JSON.stringify(deviceColArr);
+  // Encode JSON as HTML-safe base64 to avoid breaking data-* attributes
+  const chartData   = btoa(JSON.stringify(days30));
+  const chartLabels = btoa(unescape(encodeURIComponent(JSON.stringify(labels30))));
+  const devDataJson = btoa(JSON.stringify(deviceData));
+  const devLabJson  = btoa(unescape(encodeURIComponent(JSON.stringify(deviceLabels))));
+  const devColJson  = btoa(unescape(encodeURIComponent(JSON.stringify(deviceColArr))));
 
   const body = `
 <div class="wrapper">
