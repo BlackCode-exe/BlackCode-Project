@@ -7,26 +7,28 @@ const COOKIE_TTL  = 60 * 60 * 8; // 8 hours
 
 // ── Security Headers ─────────────────────────────────────────
 
-const SECURITY_HEADERS = {
-  "Content-Security-Policy":
-    "default-src 'self'; " +
-    "script-src 'self' https://cdnjs.cloudflare.com; " +
-    "style-src 'self'; " +
-    "font-src 'self'; " +
-    "img-src 'self' data:; " +
-    "connect-src 'none'; " +
-    "frame-ancestors 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';",
-  "X-Frame-Options":           "DENY",
-  "X-Content-Type-Options":    "nosniff",
-  "Referrer-Policy":           "strict-origin-when-cross-origin",
-  "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
-  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-};
+function makeSecurityHeaders(nonce = "") {
+  return {
+    "Content-Security-Policy":
+      "default-src 'self'; " +
+      `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ""}; ` +
+      "style-src 'self'; " +
+      "font-src 'self'; " +
+      "img-src 'self' data:; " +
+      "connect-src 'none'; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self';",
+    "X-Frame-Options":           "DENY",
+    "X-Content-Type-Options":    "nosniff",
+    "Referrer-Policy":           "strict-origin-when-cross-origin",
+    "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  };
+}
 
 function htmlHeaders(nonce = "") {
-  return { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS };
+  return { "Content-Type": "text/html;charset=UTF-8", ...makeSecurityHeaders(nonce) };
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -43,7 +45,7 @@ function isAuthenticated(request, env) {
 }
 
 function redirect(url, status = 302) {
-  return new Response(null, { status, headers: { Location: url, ...SECURITY_HEADERS } });
+  return new Response(null, { status, headers: { Location: url, ...makeSecurityHeaders() } });
 }
 
 function escHtml(str) {
@@ -169,7 +171,8 @@ function hamburgerBtn() {
 
 // ── HTML Shell ────────────────────────────────────────────────
 
-function htmlShell(title, bodyContent, withCharts = false) {
+function htmlShell(title, bodyContent, withCharts = false, nonce = "") {
+  const n = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -181,8 +184,8 @@ function htmlShell(title, bodyContent, withCharts = false) {
 </head>
 <body>
 ${bodyContent}
-<script src="/js/main.js"></script>
-${withCharts ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script><script src="/js/chart.js"></script>' : ''}
+<script${n} src="/js/main.js"></script>
+${withCharts ? `<script${n} src="/js/chartjs.min.js"></script><script${n} src="/js/chart.js"></script>` : ''}
 </body>
 </html>`;
 }
@@ -345,7 +348,7 @@ ${sidebarHtml("stats")}
   return htmlShell("Stats", body);
 }
 
-function adminLinkDetailPage(slug, data, host) {
+function adminLinkDetailPage(slug, data, host, nonce = "") {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
   const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
@@ -501,7 +504,7 @@ function adminLinkDetailPage(slug, data, host) {
 ${sidebarHtml("")}
 ${editModal}`;
 
-  return htmlShell(`Stats — ${slug}`, body, true);
+  return htmlShell(`Stats — ${slug}`, body, true, nonce);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
@@ -523,7 +526,7 @@ export default {
     ) {
       const assetResp = await env.ASSETS.fetch(request);
       const newHeaders = new Headers(assetResp.headers);
-      Object.entries(SECURITY_HEADERS).forEach(([k,v]) => newHeaders.set(k, v));
+      Object.entries(makeSecurityHeaders()).forEach(([k,v]) => newHeaders.set(k, v));
       return new Response(assetResp.body, { status: assetResp.status, headers: newHeaders });
     }
 
@@ -533,7 +536,7 @@ export default {
         const form = await request.formData();
         const pwd  = form.get("password") || "";
         if (pwd === env.ADMIN_PASSWORD) {
-          return new Response(null, { status:302, headers:{ Location:"/admin", "Set-Cookie":setCookie(env.ADMIN_PASSWORD, COOKIE_TTL), ...SECURITY_HEADERS } });
+          return new Response(null, { status:302, headers:{ Location:"/admin", "Set-Cookie":setCookie(env.ADMIN_PASSWORD, COOKIE_TTL), ...makeSecurityHeaders() } });
         }
         return new Response(loginPage(true), { headers: htmlHeaders() });
       }
@@ -542,7 +545,7 @@ export default {
 
     // Admin logout
     if (pathname === "/admin/logout") {
-      return new Response(null, { status:302, headers:{ Location:"/admin/login", "Set-Cookie":setCookie("",0), ...SECURITY_HEADERS } });
+      return new Response(null, { status:302, headers:{ Location:"/admin/login", "Set-Cookie":setCookie("",0), ...makeSecurityHeaders() } });
     }
 
     // Admin area
@@ -620,7 +623,8 @@ export default {
         const data  = await getLink(env, slug);
         if (!data) return redirect("/admin");
         const host  = request.headers.get("host");
-        return new Response(adminLinkDetailPage(slug, data, host), { headers: htmlHeaders() });
+        const nonce = crypto.randomUUID().replace(/-/g, "");
+        return new Response(adminLinkDetailPage(slug, data, host, nonce), { headers: htmlHeaders(nonce) });
       }
 
       return redirect("/admin");
