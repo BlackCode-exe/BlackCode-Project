@@ -481,7 +481,7 @@ function adminLinkDetailPage(slug, data, host, nonce = "") {
       <div class="section-title">Devices</div>
       <div class="chart-wrap chart-wrap-auto">
         <div class="donut-wrap">
-          <div style="position:relative;width:120px;height:120px;flex-shrink:0;"><canvas id="deviceChart" data-labels="${devLabJson}" data-values="${devDataJson}" data-colors="${devColJson}"></canvas></div>
+          <div class="donut-canvas-wrap"><canvas id="deviceChart" data-labels="${devLabJson}" data-values="${devDataJson}" data-colors="${devColJson}"></canvas></div>
           <div class="donut-legend">${deviceLegend}</div>
         </div>
       </div>
@@ -634,14 +634,14 @@ export default {
     // Root page
     const slug = pathname.slice(1);
     if (!slug) {
-      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>BlackCode Shortener</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><style>*{box-sizing:border-box;margin:0;padding:0;}html,body{height:100%;background:#0a0a0a;display:flex;align-items:center;justify-content:center;}img{display:block;max-width:100%;}</style></head><body><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>BlackCode Shortener</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css"></head><body class="root-page"><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
       return new Response(html, { headers: htmlHeaders() });
     }
 
     // Short link redirect
     const data = await getLink(env, slug);
     if (!data) {
-      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><style>*{box-sizing:border-box;margin:0;padding:0;}@font-face{font-family:'Montserrat';src:url('/fonts/Montserrat-Bold.woff') format('woff');font-weight:700;}html,body{height:100%;background:#0a0a0a;color:#f0f0f0;font-family:'Montserrat',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;}.code{font-size:96px;font-weight:700;color:#e8ff00;line-height:1;}.msg{font-size:18px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#666;}</style></head><body><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
+      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
       return new Response(notFound, { status:404, headers: htmlHeaders() });
     }
 
