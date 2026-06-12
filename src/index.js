@@ -10,8 +10,8 @@ const COOKIE_TTL  = 60 * 60 * 8; // 8 hours
 const SECURITY_HEADERS = {
   "Content-Security-Policy":
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
-    "style-src 'self' 'unsafe-inline'; " +
+    "script-src 'self' https://cdnjs.cloudflare.com; " +
+    "style-src 'self'; " +
     "font-src 'self'; " +
     "img-src 'self' data:; " +
     "connect-src 'none'; " +
@@ -169,7 +169,7 @@ function hamburgerBtn() {
 
 // ── HTML Shell ────────────────────────────────────────────────
 
-function htmlShell(title, bodyContent, inlineScript = "") {
+function htmlShell(title, bodyContent, withCharts = false) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -177,12 +177,13 @@ function htmlShell(title, bodyContent, inlineScript = "") {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/css/styles.css">
+  ${withCharts ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>' : ''}
 </head>
 <body>
 ${bodyContent}
-<script src="/js/main.js"></script>${inlineScript ? `\n<script>${inlineScript}</script>` : ""}
+<script src="/js/main.js"></script>
+${withCharts ? '<script src="/js/chart.js"></script>' : ''}
 </body>
 </html>`;
 }
@@ -220,11 +221,11 @@ function adminLinksPage(links, request, flashMsg = "") {
           <div class="link-card-top">
             <a href="/${escHtml(l.slug)}" target="_blank" class="link-card-url">${fullUrl}</a>
             <div class="link-card-actions">
-              <button type="button" class="icon-btn" title="Copy" onclick="copyLink(this,'${fullUrl}')">${ICON_COPY}</button>
-              <button type="button" class="icon-btn icon-btn-edit" title="Edit" onclick="openEditModal('${escHtml(l.slug)}','${escHtml(l.target)}')">${ICON_EDIT}</button>
+              <button type="button" class="icon-btn" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+              <button type="button" class="icon-btn icon-btn-edit" title="Edit" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}">${ICON_EDIT}</button>
               <form method="POST" action="/admin/delete" style="display:inline;">
                 <input type="hidden" name="slug" value="${escHtml(l.slug)}">
-                <button type="submit" class="icon-btn icon-btn-danger" title="Delete" onclick="return confirm('Delete /' + '${escHtml(l.slug)}' + '?')">${ICON_TRASH}</button>
+                <button type="submit" class="icon-btn icon-btn-danger" title="Delete" data-delete="${escHtml(l.slug)}">${ICON_TRASH}</button>
               </form>
             </div>
           </div>
@@ -240,7 +241,7 @@ function adminLinksPage(links, request, flashMsg = "") {
       }).join("");
 
   const editModal = `
-<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+<div class="modal-overlay" id="editModal">
   <div class="modal-box">
     <div class="modal-title">Edit Link</div>
     <form method="POST" action="/admin/edit">
@@ -254,7 +255,7 @@ function adminLinksPage(links, request, flashMsg = "") {
         <input type="url" name="target" id="edit_target" required>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="btn btn-danger" onclick="closeModal('editModal')">Cancel</button>
+        <button type="button" class="btn btn-danger" data-close-modal="editModal">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
@@ -415,7 +416,7 @@ function adminLinkDetailPage(slug, data, host) {
     </div>`).join("") || `<div style="color:var(--muted);font-size:13px;">No data yet.</div>`;
 
   const editModal = `
-<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+<div class="modal-overlay" id="editModal">
   <div class="modal-box">
     <div class="modal-title">Edit Link</div>
     <form method="POST" action="/admin/edit">
@@ -430,7 +431,7 @@ function adminLinkDetailPage(slug, data, host) {
         <input type="url" name="target" value="${escHtml(data.target)}" required>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="btn btn-danger" onclick="closeModal('editModal')">Cancel</button>
+        <button type="button" class="btn btn-danger" data-close-modal="editModal">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
@@ -452,8 +453,8 @@ function adminLinkDetailPage(slug, data, host) {
         <span><span style="color:var(--muted);">Created:</span> <strong>${created}</strong></span>
       </div>
       <div class="detail-actions">
-        <button type="button" class="icon-btn" title="Copy" onclick="copyLink(this,'${fullUrl}')">${ICON_COPY}</button>
-        <button type="button" class="icon-btn icon-btn-edit" title="Edit" onclick="openModal('editModal')">${ICON_EDIT}</button>
+        <button type="button" class="icon-btn" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+        <button type="button" class="icon-btn icon-btn-edit" title="Edit" id="editBtn">${ICON_EDIT}</button>
       </div>
     </div>
 
@@ -464,14 +465,14 @@ function adminLinkDetailPage(slug, data, host) {
 
     <div class="section-block">
       <div class="section-title">Clicks — Last 30 Days</div>
-      <div class="chart-wrap"><canvas id="clickChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="clickChart" data-labels="${chartLabels}" data-values="${chartData}"></canvas></div>
     </div>
 
     <div class="section-block">
       <div class="section-title">Devices</div>
       <div class="chart-wrap chart-wrap-auto">
         <div class="donut-wrap">
-          <div style="position:relative;width:120px;height:120px;flex-shrink:0;"><canvas id="deviceChart"></canvas></div>
+          <div style="position:relative;width:120px;height:120px;flex-shrink:0;"><canvas id="deviceChart" data-labels="${devLabJson}" data-values="${devDataJson}" data-colors="${devColJson}"></canvas></div>
           <div class="donut-legend">${deviceLegend}</div>
         </div>
       </div>
@@ -501,25 +502,7 @@ ${editModal}`;
   const devLabJson  = JSON.stringify(deviceLabels);
   const devColJson  = JSON.stringify(deviceColArr);
 
-  const inlineScript = `
-const ctx1 = document.getElementById('clickChart');
-if(ctx1){
-  new Chart(ctx1,{
-    type:'bar',
-    data:{ labels:${chartLabels}, datasets:[{ data:${chartData}, backgroundColor:'#e8ff0033', borderColor:'#e8ff00', borderWidth:1, borderRadius:3 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#1a1a1a'},ticks:{color:'#666',font:{size:10},maxTicksLimit:10}}, y:{grid:{color:'#1a1a1a'},ticks:{color:'#666',font:{size:10},stepSize:1},beginAtZero:true} } }
-  });
-}
-const ctx2 = document.getElementById('deviceChart');
-if(ctx2 && ${devDataJson}.length>0){
-  new Chart(ctx2,{
-    type:'doughnut',
-    data:{ labels:${devLabJson}, datasets:[{ data:${devDataJson}, backgroundColor:${devColJson}, borderWidth:0 }] },
-    options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false}}, cutout:'65%' }
-  });
-}`;
-
-  return htmlShell(`Stats — ${slug}`, body, inlineScript);
+  return htmlShell(`Stats — \${slug}`, body, true);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
