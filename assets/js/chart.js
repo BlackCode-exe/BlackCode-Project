@@ -1,6 +1,9 @@
-a// ── Chart init — data injected via base64-encoded data-* attributes ──
+(function init() {
+  if (typeof Chart === 'undefined') {
+    setTimeout(init, 50);
+    return;
+  }
 
-(function () {
   function decode(b64) {
     try {
       return JSON.parse(decodeURIComponent(escape(atob(b64))));
@@ -12,7 +15,7 @@ a// ── Chart init — data injected via base64-encoded data-* attributes ─
   const chartEl  = document.getElementById('clickChart');
   const deviceEl = document.getElementById('deviceChart');
 
-  if (chartEl) {
+  if (chartEl && chartEl.dataset.labels) {
     const labels = decode(chartEl.dataset.labels);
     const values = decode(chartEl.dataset.values);
     new Chart(chartEl, {
@@ -46,7 +49,7 @@ a// ── Chart init — data injected via base64-encoded data-* attributes ─
     });
   }
 
-  if (deviceEl) {
+  if (deviceEl && deviceEl.dataset.labels) {
     const labels = decode(deviceEl.dataset.labels);
     const values = decode(deviceEl.dataset.values);
     const colors = decode(deviceEl.dataset.colors);
