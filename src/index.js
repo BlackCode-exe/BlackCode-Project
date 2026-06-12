@@ -27,6 +27,7 @@ function makeSecurityHeaders(nonce = "") {
     "Referrer-Policy":           "strict-origin-when-cross-origin",
     "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+    "X-Robots-Tag":              "noindex, nofollow",
   };
 }
 
@@ -608,6 +609,13 @@ export default {
     const url      = new URL(request.url);
     const pathname = url.pathname;
     const method   = request.method;
+
+    // robots.txt
+    if (pathname === "/robots.txt") {
+      return new Response("User-agent: *\nDisallow: /\n", {
+        headers: { "Content-Type": "text/plain", ...makeSecurityHeaders() }
+      });
+    }
 
     // Static assets
     if (
