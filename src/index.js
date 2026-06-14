@@ -182,6 +182,13 @@ async function deleteLink(env, slug) {
 }
 
 async function recordClick(env, slug, data, request) {
+  // Filter bots and prefetch requests
+  const ua      = request.headers.get("User-Agent") || "";
+  const purpose = request.headers.get("Purpose") || request.headers.get("Sec-Purpose") || "";
+  const isBot   = /bot|crawler|spider|preview|prefetch|facebookexternalhit|whatsapp|telegram|twitter|slack|discord|linkedin|curl|python|java|ruby|go-http/i.test(ua);
+  const isPrefetch = purpose === "prefetch";
+  if (isBot || isPrefetch) return;
+
   const cf      = request.cf || {};
   const country = cf.country || "Unknown";
   const city    = cf.city    || "Unknown";
