@@ -79,18 +79,47 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
   });
 });
 
+// ── Dropdown menu ("...") ─────────────────────────────────────
+
+(function () {
+  // Toggle dropdown on "..." button click
+  document.querySelectorAll('.link-card-menu-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const slug     = btn.dataset.menu;
+      const dropdown = document.getElementById('menu-' + slug);
+      if (!dropdown) return;
+      // Close all other dropdowns first
+      document.querySelectorAll('.link-card-dropdown.open').forEach(d => {
+        if (d !== dropdown) d.classList.remove('open');
+      });
+      dropdown.classList.toggle('open');
+    });
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.link-card-dropdown.open').forEach(d => {
+      d.classList.remove('open');
+    });
+  });
+})();
+
 // ── Edit modal (links page) ───────────────────────────────────
 
 document.querySelectorAll('[data-edit]').forEach(btn => {
   btn.addEventListener('click', () => {
     const slug   = btn.dataset.edit;
     const target = btn.dataset.target;
+    const title  = btn.dataset.title || "";
     const oldSlug   = document.getElementById('edit_old_slug');
     const newSlug   = document.getElementById('edit_slug');
     const newTarget = document.getElementById('edit_target');
+    const newTitle  = document.getElementById('edit_title');
     if (oldSlug)   oldSlug.value   = slug;
     if (newSlug)   newSlug.value   = slug;
     if (newTarget) newTarget.value = target;
+    if (newTitle)  newTitle.value  = title;
     openModal('editModal');
   });
 });
