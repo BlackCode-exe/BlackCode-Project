@@ -581,17 +581,8 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   </header>
   <main>
     <div class="detail-header">
-      <div class="detail-title">${escHtml(linkTitle)}</div>
-      <div class="detail-url-row">
-        <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
-        <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
-      </div>
-      <div class="detail-target-row">
-        <span class="detail-target-arrow">↳</span>
-        <span class="detail-target-url" title="${escHtml(data.target)}">${escHtml(targetShort)}</span>
-      </div>
-      <div class="detail-footer-row">
-        <span class="detail-created">${created}</span>
+      <div class="detail-header-top">
+        <div class="detail-title">${escHtml(linkTitle)}</div>
         <div class="link-card-menu-wrap">
           <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
@@ -606,6 +597,15 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
           </div>
         </div>
       </div>
+      <div class="detail-url-row">
+        <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
+        <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+      </div>
+      <div class="detail-target-row">
+        <span class="detail-target-arrow">↳</span>
+        <span class="detail-target-url" title="${escHtml(data.target)}">${escHtml(targetShort)}</span>
+      </div>
+      <div class="detail-created">${created}</div>
     </div>
 
     <div class="num-row">
