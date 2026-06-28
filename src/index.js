@@ -167,10 +167,11 @@ async function getLink(env, slug) {
   return await env.KV_BINDING.get(`link:${slug}`, { type: "json" });
 }
 
-async function saveLink(env, slug, target, existingData = null) {
+async function saveLink(env, slug, target, title = "", existingData = null) {
   const base = existingData || { clicks: 0, history: [], created: Date.now() };
   await env.KV_BINDING.put(`link:${slug}`, JSON.stringify({
     target,
+    title:   title || base.title || "",
     clicks:  base.clicks  || 0,
     history: base.history || [],
     created: base.created || Date.now(),
@@ -316,27 +317,35 @@ function adminLinksPage(links, request, flashMsg = "", csrf = "") {
     : links.map(l => {
         const fullUrl = `https://${host}/${escHtml(l.slug)}`;
         const date    = l.created ? new Date(l.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
+        const title   = l.title || l.slug;
         return `
         <div class="link-card">
           <div class="link-card-top">
-            <a href="/${escHtml(l.slug)}" target="_blank" class="link-card-url">${fullUrl}</a>
-            <div class="link-card-actions">
-              <button type="button" class="icon-btn" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
-              <button type="button" class="icon-btn icon-btn-edit" title="Edit" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}">${ICON_EDIT}</button>
-              <form method="POST" action="/admin/delete" style="display:inline;">
-                <input type="hidden" name="_csrf" value="${csrf}">
-                <input type="hidden" name="slug" value="${escHtml(l.slug)}">
-                <button type="submit" class="icon-btn icon-btn-danger" title="Delete" data-delete="${escHtml(l.slug)}">${ICON_TRASH}</button>
-              </form>
+            <div class="link-card-main">
+              <div class="link-card-title">${escHtml(title)}</div>
+              <div class="link-card-url-row">
+                <a href="/admin/link/${escHtml(l.slug)}" class="link-card-url">${fullUrl}</a>
+                <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+              </div>
+              <div class="link-card-target">${escHtml(l.target)}</div>
+            </div>
+            <div class="link-card-menu-wrap">
+              <button type="button" class="icon-btn link-card-menu-btn" data-menu="${escHtml(l.slug)}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+              </button>
+              <div class="link-card-dropdown" id="menu-${escHtml(l.slug)}">
+                <button type="button" class="dropdown-item" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}" data-title="${escHtml(l.title || "")}">${ICON_EDIT} Edit Link</button>
+                <form method="POST" action="/admin/delete">
+                  <input type="hidden" name="_csrf" value="${csrf}">
+                  <input type="hidden" name="slug" value="${escHtml(l.slug)}">
+                  <button type="submit" class="dropdown-item dropdown-item-danger" data-delete="${escHtml(l.slug)}">${ICON_TRASH} Delete Link</button>
+                </form>
+              </div>
             </div>
           </div>
-          <div class="link-card-target">${escHtml(l.target)}</div>
-          <div class="link-card-meta">
-            <span>Total Clicks: <strong>${l.clicks || 0}</strong></span>
-            <div style="display:flex;gap:10px;align-items:center;">
-              <span>${date}</span>
-              <a href="/admin/link/${escHtml(l.slug)}" class="link-card-stats-btn">${ICON_CHART} Stats</a>
-            </div>
+          <div class="link-card-footer">
+            <span class="link-card-clicks">Total Clicks: <strong>${l.clicks || 0}</strong></span>
+            <span class="link-card-date">${date}</span>
           </div>
         </div>`;
       }).join("");
@@ -348,6 +357,10 @@ function adminLinksPage(links, request, flashMsg = "", csrf = "") {
     <form method="POST" action="/admin/edit">
       <input type="hidden" name="_csrf" value="${csrf}">
       <input type="hidden" name="old_slug" id="edit_old_slug">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" id="edit_title" placeholder="e.g. My Link">
+      </div>
       <div class="form-group">
         <label>Back-half</label>
         <input type="text" name="slug" id="edit_slug" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
@@ -396,6 +409,10 @@ ${sidebarHtml("add")}
     <div class="section-title">Create New Short Link</div>
     <form method="POST" action="/admin/add" style="max-width:480px;">
       <input type="hidden" name="_csrf" value="${csrf}">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" placeholder="e.g. My Awesome Link">
+      </div>
       <div class="form-group">
         <label>Back-half (custom slug)</label>
         <input type="text" name="slug" placeholder="e.g. my-link" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
@@ -527,6 +544,10 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
       <input type="hidden" name="old_slug" value="${escHtml(slug)}">
       <input type="hidden" name="redirect_to" value="detail">
       <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" value="${escHtml(data.title || "")}" placeholder="e.g. My Awesome Link">
+      </div>
+      <div class="form-group">
         <label>Back-half</label>
         <input type="text" name="slug" value="${escHtml(slug)}" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
       </div>
@@ -549,6 +570,8 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const devLabJson  = btoa(unescape(encodeURIComponent(JSON.stringify(deviceLabels))));
   const devColJson  = btoa(unescape(encodeURIComponent(JSON.stringify(deviceColArr))));
 
+  const linkTitle = data.title || slug;
+
   const body = `
 <div class="wrapper">
   <header>
@@ -558,14 +581,30 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   </header>
   <main>
     <div class="detail-header">
-      <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
-      <div class="detail-meta">
-        <span><span style="color:var(--muted);">Target:</span> <strong title="${escHtml(data.target)}">${escHtml(targetShort)}</strong></span>
-        <span><span style="color:var(--muted);">Created:</span> <strong>${created}</strong></span>
+      <div class="detail-title">${escHtml(linkTitle)}</div>
+      <div class="detail-url-row">
+        <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
+        <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
       </div>
-      <div class="detail-actions">
-        <button type="button" class="icon-btn" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
-        <button type="button" class="icon-btn icon-btn-edit" title="Edit" id="editBtn">${ICON_EDIT}</button>
+      <div class="detail-target-row">
+        <span class="detail-target-arrow">↳</span>
+        <span class="detail-target-url" title="${escHtml(data.target)}">${escHtml(targetShort)}</span>
+      </div>
+      <div class="detail-footer-row">
+        <span class="detail-created">${created}</span>
+        <div class="link-card-menu-wrap">
+          <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+          <div class="link-card-dropdown" id="menu-detail-slug">
+            <button type="button" class="dropdown-item" id="editBtn">${ICON_EDIT} Edit Link</button>
+            <form method="POST" action="/admin/delete">
+              <input type="hidden" name="_csrf" value="${csrfToken}">
+              <input type="hidden" name="slug" value="${escHtml(slug)}">
+              <button type="submit" class="dropdown-item dropdown-item-danger" data-delete="${escHtml(slug)}">${ICON_TRASH} Delete Link</button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -689,10 +728,11 @@ export default {
         const form   = await request.formData();
         const slug   = (form.get("slug") || "").trim();
         const target = (form.get("target") || "").trim();
+        const title  = (form.get("title") || "").trim();
         if (!slug || !target) return new Response(adminAddPage(flash("error", "Both fields are required."), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
         if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return new Response(adminAddPage(flash("error", "Slug: only letters, numbers, hyphens, underscores."), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
         if (["admin","favicon.ico","logo.png","fonts","css","js"].includes(slug)) return new Response(adminAddPage(flash("error", `"${slug}" is reserved.`), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
-        await saveLink(env, slug, target);
+        await saveLink(env, slug, target, title);
         return new Response(adminAddPage(flash("success", `Link created: /${slug}`), await getCsrfToken(request, env) || ""), { headers: htmlHeaders() });
       }
 
@@ -713,6 +753,7 @@ export default {
         const oldSlug    = (form.get("old_slug") || "").trim();
         const newSlug    = (form.get("slug") || "").trim();
         const newTarget  = (form.get("target") || "").trim();
+        const newTitle   = (form.get("title") || "").trim();
         const redirectTo = form.get("redirect_to") || "";
 
         if (!newSlug || !newTarget) {
@@ -726,7 +767,7 @@ export default {
 
         const existing = await getLink(env, oldSlug);
         if (oldSlug !== newSlug) await deleteLink(env, oldSlug);
-        await saveLink(env, newSlug, newTarget, existing);
+        await saveLink(env, newSlug, newTarget, newTitle, existing);
 
         if (redirectTo === "detail") return redirect(`/admin/link/${newSlug}`);
         const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
