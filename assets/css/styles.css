@@ -274,3 +274,70 @@ body.not-found-page {
 }
 body.not-found-page .code { font-size:96px; font-weight:700; color:#e8ff00; line-height:1; }
 body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#666; }
+
+/* ── Link card redesign ── */
+.link-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.link-card-main { flex:1; min-width:0; }
+.link-card-title { font-weight:700; font-size:15px; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.link-card-url-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.link-card-url { font-size:13px; font-weight:700; color:var(--accent2); text-decoration:none; word-break:break-all; flex:1; }
+.link-card-url:hover { text-decoration:underline; }
+.link-card-target { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.link-card-footer { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+.link-card-clicks strong { color:var(--text); }
+
+/* ── Icon btn small ── */
+.icon-btn-sm { width:24px; height:24px; flex-shrink:0; }
+
+/* ── Dropdown menu ── */
+.link-card-menu-wrap { position:relative; flex-shrink:0; }
+.link-card-menu-btn { border:none; color:var(--muted); }
+.link-card-menu-btn:hover { color:var(--text); border-color:var(--border); background:var(--surface2); }
+
+.link-card-dropdown {
+  display:none;
+  position:absolute;
+  top:calc(100% + 4px);
+  right:0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  min-width:160px;
+  z-index:50;
+  overflow:hidden;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.link-card-dropdown.open { display:block; }
+
+.dropdown-item {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  padding:10px 14px;
+  background:transparent;
+  border:none;
+  color:var(--text);
+  font-family:var(--font);
+  font-size:13px;
+  font-weight:400;
+  text-align:left;
+  cursor:pointer;
+  transition:background 0.15s;
+  text-decoration:none;
+}
+.dropdown-item:hover { background:var(--surface2); }
+.dropdown-item-danger { color:var(--danger); }
+.dropdown-item-danger:hover { background:rgba(255,59,59,0.08); }
+.link-card-dropdown form { margin:0; }
+
+/* ── Detail header redesign ── */
+.detail-title { font-weight:700; font-size:20px; color:var(--text); margin-bottom:8px; word-break:break-word; }
+.detail-url-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.detail-shortlink { font-size:15px; font-weight:700; color:var(--accent2); text-decoration:none; word-break:break-all; flex:1; }
+.detail-shortlink:hover { text-decoration:underline; }
+.detail-target-row { display:flex; align-items:center; gap:6px; margin-bottom:12px; }
+.detail-target-arrow { color:var(--muted); font-size:14px; flex-shrink:0; }
+.detail-target-url { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.detail-footer-row { display:flex; align-items:center; justify-content:space-between; }
+.detail-created { font-size:11px; color:var(--muted); }
