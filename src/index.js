@@ -430,18 +430,75 @@ ${sidebarHtml("add")}
   return htmlShell("Add Link", body);
 }
 
-async function adminStatsPage(links) {
+async function adminStatsPage(links, request, csrf = "") {
   const totalLinks  = links.length;
   const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
-  const topLinks    = [...links].sort((a, b) => b.clicks - a.clicks).slice(0, 5);
+  const host        = request.headers.get("host");
 
-  const topRows = topLinks.length === 0
-    ? `<tr><td colspan="2"><div class="empty-state" style="padding:24px;"><strong>No data yet</strong></div></td></tr>`
-    : topLinks.map(l => `
-      <tr>
-        <td><a href="/admin/link/${escHtml(l.slug)}" class="stats-link">${escHtml(l.slug)}</a></td>
-        <td><span class="click-badge">${l.clicks || 0}</span></td>
-      </tr>`).join("");
+  const cards = links.length === 0
+    ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div>`
+    : links.map(l => {
+        const fullUrl = `https://${host}/${escHtml(l.slug)}`;
+        const date    = l.created ? new Date(l.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
+        const title   = l.title || l.slug;
+        return `
+        <div class="link-card">
+          <div class="link-card-top">
+            <div class="link-card-main">
+              <div class="link-card-title">${escHtml(title)}</div>
+              <div class="link-card-url-row">
+                <a href="/admin/link/${escHtml(l.slug)}" class="link-card-url">${fullUrl}</a>
+                <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+              </div>
+              <div class="link-card-target">${escHtml(l.target)}</div>
+            </div>
+            <div class="link-card-menu-wrap">
+              <button type="button" class="icon-btn link-card-menu-btn" data-menu="stats-${escHtml(l.slug)}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+              </button>
+              <div class="link-card-dropdown" id="menu-stats-${escHtml(l.slug)}">
+                <button type="button" class="dropdown-item" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}" data-title="${escHtml(l.title || "")}">${ICON_EDIT} Edit Link</button>
+                <form method="POST" action="/admin/delete">
+                  <input type="hidden" name="_csrf" value="${csrf}">
+                  <input type="hidden" name="slug" value="${escHtml(l.slug)}">
+                  <button type="submit" class="dropdown-item dropdown-item-danger" data-delete="${escHtml(l.slug)}">${ICON_TRASH} Delete Link</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="link-card-footer">
+            <span class="link-card-clicks">Total Clicks: <strong>${l.clicks || 0}</strong></span>
+            <span class="link-card-date">${date}</span>
+          </div>
+        </div>`;
+      }).join("");
+
+  const editModal = `
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">Edit Link</div>
+    <form method="POST" action="/admin/edit">
+      <input type="hidden" name="_csrf" value="${csrf}">
+      <input type="hidden" name="old_slug" id="edit_old_slug">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" id="edit_title" placeholder="e.g. My Awesome Link">
+      </div>
+      <div class="form-group">
+        <label>Back-half</label>
+        <input type="text" name="slug" id="edit_slug" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
+      </div>
+      <div class="form-group">
+        <label>Target URL</label>
+        <input type="url" name="target" id="edit_target" required>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn btn-danger" data-close-modal="editModal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>`;
 
   const body = `
 ${sidebarHtml("stats")}
@@ -455,14 +512,12 @@ ${sidebarHtml("stats")}
       <div class="stat-card"><div class="stat-label">Total Links</div><div class="stat-value">${totalLinks}</div></div>
       <div class="stat-card"><div class="stat-label">Total Clicks</div><div class="stat-value">${totalClicks}</div></div>
     </div>
-    <div class="section-title">Top 5 Links by Clicks</div>
-    <table class="links-table" style="max-width:480px;">
-      <thead><tr><th>Back-half</th><th>Clicks</th></tr></thead>
-      <tbody>${topRows}</tbody>
-    </table>
+    <div class="section-title">All Links</div>
+    <div class="link-list">${cards}</div>
   </main>
   <footer><img src="/logo.png" alt="Logo"></footer>
-</div>`;
+</div>
+${editModal}`;
   return htmlShell("Stats", body);
 }
 
@@ -776,8 +831,8 @@ export default {
 
       // GET /admin/stats
       if (pathname === "/admin/stats" && method === "GET") {
-        const links = await listLinks(env);
-        return new Response(await adminStatsPage(links), { headers: htmlHeaders() });
+        const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+        return new Response(await adminStatsPage(links, request, csrf || ""), { headers: htmlHeaders() });
       }
 
       // GET /admin/link/:slug
