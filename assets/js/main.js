@@ -130,3 +130,32 @@ const editBtn = document.getElementById('editBtn');
 if (editBtn) {
   editBtn.addEventListener('click', () => openModal('editModal'));
 }
+
+// ── Dashboard search ──────────────────────────────────────────
+
+(function () {
+  const input = document.getElementById('dashSearch');
+  const list  = document.getElementById('dashList');
+  if (!input || !list) return;
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    const rows = list.querySelectorAll('.dash-row');
+    let visible = 0;
+    rows.forEach(row => {
+      const text = row.dataset.search || "";
+      const match = !q || text.includes(q);
+      row.hidden = !match;
+      if (match) visible++;
+    });
+    // Show/hide empty state
+    let empty = list.querySelector('.dash-empty');
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'dash-empty';
+      empty.textContent = 'No links found.';
+      list.appendChild(empty);
+    }
+    empty.style.display = visible === 0 ? 'block' : 'none';
+  });
+})();
