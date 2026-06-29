@@ -404,9 +404,9 @@ async function adminStatsPage(links, request, csrf = "") {
         <div class="link-card">
           <div class="link-card-top">
             <div class="link-card-main">
-              <div class="link-card-title">${escHtml(title)}</div>
+              <a href="/admin/link/${escHtml(l.slug)}" class="link-card-title-link"><div class="link-card-title">${escHtml(title)}</div></a>
               <div class="link-card-url-row">
-                <a href="/admin/link/${escHtml(l.slug)}" class="link-card-url">${fullUrl}</a>
+                <span class="link-card-url">${fullUrl}</span>
                 <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
               </div>
               <div class="link-card-target">${escHtml(l.target)}</div>
