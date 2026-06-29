@@ -404,6 +404,11 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
   max-width:320px;
   width:calc(100vw - 48px);
   padding:20px;
+  text-align:center;
+}
+.modal-box-qr #qrCanvas {
+  display:flex;
+  justify-content:center;
 }
 .modal-box-qr #qrCanvas canvas {
   max-width:100%;
@@ -439,3 +444,5 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
   transition:color 0.15s;
 }
 .qr-close-btn:hover { color:var(--text); }
+
+.qr-label { font-size:13px; font-weight:700; color:var(--text); margin-bottom:14px; }
