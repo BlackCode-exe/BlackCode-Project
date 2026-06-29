@@ -10,91 +10,85 @@
   const wrapper = document.querySelector('[data-qr-url]');
   const url     = wrapper ? wrapper.dataset.qrUrl : window.location.href;
 
-  let qrGenerated = false;
+  const RENDER_SIZE  = 512; // actual canvas size (download resolution)
+  const DISPLAY_SIZE = 300; // CSS display size
+
+  let finalCanvas = null;
 
   qrBtn.addEventListener('click', () => {
     openModal('qrModal');
-    if (qrGenerated) return;
-    qrGenerated = true;
+    if (finalCanvas) return;
 
-    // Clear previous
     qrCanvas.innerHTML = '';
 
-    const size = 256;
+    // Temp container for QRCode lib
+    const tempDiv = document.createElement('div');
+    tempDiv.style.display = 'none';
+    document.body.appendChild(tempDiv);
 
-    // Generate QR
-    const qr = new QRCode(qrCanvas, {
-      text:           url,
-      width:          size,
-      height:         size,
-      colorDark:      "#000000",
-      colorLight:     "#ffffff",
-      correctLevel:   QRCode.CorrectLevel.H, // High error correction for logo overlay
+    new QRCode(tempDiv, {
+      text:         url,
+      width:        RENDER_SIZE,
+      height:       RENDER_SIZE,
+      colorDark:    "#000000",
+      colorLight:   "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H,
     });
 
-    // After QR renders, overlay logo
     setTimeout(() => {
-      const img = qrCanvas.querySelector('img');
-      const cvs = qrCanvas.querySelector('canvas');
-      const source = cvs || img;
-      if (!source) return;
+      const srcCanvas = tempDiv.querySelector('canvas');
+      const srcImg    = tempDiv.querySelector('img');
 
-      // Draw QR + logo onto a single canvas
       const canvas  = document.createElement('canvas');
-      canvas.width  = size;
-      canvas.height = size;
-      const ctx     = canvas.getContext('2d');
+      canvas.width  = RENDER_SIZE;
+      canvas.height = RENDER_SIZE;
+      canvas.style.width  = DISPLAY_SIZE + 'px';
+      canvas.style.height = DISPLAY_SIZE + 'px';
+      canvas.style.borderRadius = '8px';
+      const ctx = canvas.getContext('2d');
 
-      const qrImg   = new Image();
-      qrImg.onload  = () => {
+      const qrImg  = new Image();
+      qrImg.onload = () => {
         // Draw QR
-        ctx.drawImage(qrImg, 0, 0, size, size);
+        ctx.drawImage(qrImg, 0, 0, RENDER_SIZE, RENDER_SIZE);
 
-        // Draw white circle background for logo
-        const logoSize = Math.round(size * 0.22);
-        const logoX    = (size - logoSize) / 2;
-        const logoY    = (size - logoSize) / 2;
-        const pad      = 6;
-        ctx.fillStyle  = "#ffffff";
+        // Logo overlay
+        const logoSize = Math.round(RENDER_SIZE * 0.20);
+        const logoX    = (RENDER_SIZE - logoSize) / 2;
+        const logoY    = (RENDER_SIZE - logoSize) / 2;
+        const pad      = Math.round(RENDER_SIZE * 0.025);
+
+        // White circle bg
+        ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, (logoSize / 2) + pad, 0, Math.PI * 2);
+        ctx.arc(RENDER_SIZE / 2, RENDER_SIZE / 2, (logoSize / 2) + pad, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw logo
-        const logo    = new Image();
-        logo.onload   = () => {
+        const logo   = new Image();
+        logo.onload  = () => {
           ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-
-          // Replace QR canvas with combined canvas
-          qrCanvas.innerHTML = '';
-          canvas.style.borderRadius = '8px';
-          qrCanvas.appendChild(canvas);
+          finish(canvas);
         };
-        logo.onerror = () => {
-          // No logo, just show QR
-          qrCanvas.innerHTML = '';
-          canvas.style.borderRadius = '8px';
-          qrCanvas.appendChild(canvas);
-        };
+        logo.onerror = () => finish(canvas);
         logo.src = '/qrlogo.png';
       };
 
-      if (cvs) {
-        qrImg.src = cvs.toDataURL();
-      } else {
-        qrImg.src = img.src;
-      }
-    }, 100);
+      qrImg.src = srcCanvas ? srcCanvas.toDataURL() : srcImg.src;
+      document.body.removeChild(tempDiv);
+    }, 150);
   });
 
-  // Download
+  function finish(canvas) {
+    finalCanvas = canvas;
+    qrCanvas.appendChild(canvas);
+  }
+
   if (qrDownload) {
     qrDownload.addEventListener('click', () => {
-      const canvas = qrCanvas.querySelector('canvas');
-      if (!canvas) return;
+      if (!finalCanvas) return;
       const link    = document.createElement('a');
       link.download = 'qr-code.png';
-      link.href     = canvas.toDataURL('image/png');
+      link.href     = finalCanvas.toDataURL('image/png');
       link.click();
     });
   }
