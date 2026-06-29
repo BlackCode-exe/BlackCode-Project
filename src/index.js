@@ -672,8 +672,10 @@ ${editModal}
       </button>
     </div>
     <div id="qrCanvas" style="display:flex;justify-content:center;margin:12px 0;"></div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;word-break:break-all;margin-bottom:14px;">${fullUrl}</div>
-    <button type="button" class="btn btn-primary" id="qrDownload" style="width:100%;justify-content:center;">Download QR</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px;">/${escHtml(slug)}</div>
+    <div style="display:flex;justify-content:center;">
+      <button type="button" class="btn btn-primary" id="qrDownload">Download QR</button>
+    </div>
   </div>
 </div>`;
 
