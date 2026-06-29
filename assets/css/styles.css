@@ -398,3 +398,38 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 
 .link-card-url-plain { cursor:default; }
 .link-card-url-plain:hover { text-decoration:none !important; }
+
+/* ── QR Modal ── */
+.modal-box-qr {
+  max-width:300px;
+  padding:20px;
+}
+.qr-modal-header {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  margin-bottom:4px;
+}
+.qr-modal-title {
+  font-weight:700;
+  font-size:14px;
+  letter-spacing:0.06em;
+  text-align:center;
+}
+.qr-close-btn {
+  position:absolute;
+  right:0;
+  top:50%;
+  transform:translateY(-50%);
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+  padding:4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:color 0.15s;
+}
+.qr-close-btn:hover { color:var(--text); }
