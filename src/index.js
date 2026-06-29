@@ -235,7 +235,7 @@ const ICON_LOGOUT= `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
 
 function sidebarHtml(active) {
   const nav = [
-    { id: "links",  label: "Links",    href: "/admin",        icon: ICON_LINKS },
+    { id: "links",  label: "Dashboard", href: "/admin",        icon: ICON_LINKS },
     { id: "add",    label: "Add Link", href: "/admin/add",    icon: ICON_ADD   },
     { id: "stats",  label: "Stats",    href: "/admin/stats",  icon: ICON_STATS },
   ];
@@ -311,71 +311,22 @@ function loginPage(error = false, locked = false) {
 }
 
 function adminLinksPage(links, request, flashMsg = "", csrf = "") {
-  const host  = request.headers.get("host");
-  const cards = links.length === 0
-    ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div>`
-    : links.map(l => {
-        const fullUrl = `https://${host}/${escHtml(l.slug)}`;
-        const date    = l.created ? new Date(l.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
-        const title   = l.title || l.slug;
-        return `
-        <div class="link-card">
-          <div class="link-card-top">
-            <div class="link-card-main">
-              <div class="link-card-title">${escHtml(title)}</div>
-              <div class="link-card-url-row">
-                <a href="/admin/link/${escHtml(l.slug)}" class="link-card-url">${fullUrl}</a>
-                <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
-              </div>
-              <div class="link-card-target">${escHtml(l.target)}</div>
-            </div>
-            <div class="link-card-menu-wrap">
-              <button type="button" class="icon-btn link-card-menu-btn" data-menu="${escHtml(l.slug)}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-              </button>
-              <div class="link-card-dropdown" id="menu-${escHtml(l.slug)}">
-                <button type="button" class="dropdown-item" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}" data-title="${escHtml(l.title || "")}">${ICON_EDIT} Edit Link</button>
-                <form method="POST" action="/admin/delete">
-                  <input type="hidden" name="_csrf" value="${csrf}">
-                  <input type="hidden" name="slug" value="${escHtml(l.slug)}">
-                  <button type="submit" class="dropdown-item dropdown-item-danger" data-delete="${escHtml(l.slug)}">${ICON_TRASH} Delete Link</button>
-                </form>
-              </div>
-            </div>
-          </div>
-          <div class="link-card-footer">
-            <span class="link-card-clicks">Total Clicks: <strong>${l.clicks || 0}</strong></span>
-            <span class="link-card-date">${date}</span>
-          </div>
-        </div>`;
-      }).join("");
+  const totalLinks  = links.length;
+  const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
 
-  const editModal = `
-<div class="modal-overlay" id="editModal">
-  <div class="modal-box">
-    <div class="modal-title">Edit Link</div>
-    <form method="POST" action="/admin/edit">
-      <input type="hidden" name="_csrf" value="${csrf}">
-      <input type="hidden" name="old_slug" id="edit_old_slug">
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" name="title" id="edit_title" placeholder="e.g. My Link">
-      </div>
-      <div class="form-group">
-        <label>Back-half</label>
-        <input type="text" name="slug" id="edit_slug" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
-      </div>
-      <div class="form-group">
-        <label>Target URL</label>
-        <input type="url" name="target" id="edit_target" required>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="btn btn-danger" data-close-modal="editModal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
-      </div>
-    </form>
-  </div>
-</div>`;
+  const recentRows = links.length === 0
+    ? `<div class="empty-state" style="padding:32px 0;"><strong>No links yet</strong>Add your first link via Add Link.</div>`
+    : links.map(l => {
+        const title = l.title || l.slug;
+        return `
+        <a href="/admin/link/${escHtml(l.slug)}" class="dash-row" data-search="${escHtml((l.title || l.slug).toLowerCase())} ${escHtml(l.slug.toLowerCase())}">
+          <div class="dash-row-title">${escHtml(title)}</div>
+          <div class="dash-row-right">
+            <span class="dash-row-clicks">${l.clicks || 0}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>`;
+      }).join("");
 
   const body = `
 ${sidebarHtml("links")}
@@ -386,15 +337,23 @@ ${sidebarHtml("links")}
   </header>
   <main>
     ${flashMsg}
-    <div class="section-title">All Links</div>
-    <div class="link-list">${cards}</div>
+    <div class="dash-summary">
+      <div class="dash-stat"><span class="dash-stat-label">Total Links</span><span class="dash-stat-value">${totalLinks}</span></div>
+      <div class="dash-stat"><span class="dash-stat-label">Total Clicks</span><span class="dash-stat-value">${totalClicks}</span></div>
+    </div>
+    <div class="dash-search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dash-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="dashSearch" class="dash-search" placeholder="Search links...">
+    </div>
+    <div class="section-title" style="margin-top:24px;">Recent Links</div>
+    <div class="dash-list" id="dashList">${recentRows}</div>
   </main>
   <footer><img src="/logo.png" alt="Logo"></footer>
-</div>
-${editModal}`;
+</div>`;
 
-  return htmlShell("Links", body);
+  return htmlShell("Dashboard", body);
 }
+
 
 function adminAddPage(flashMsg = "", csrf = "") {
   const body = `
