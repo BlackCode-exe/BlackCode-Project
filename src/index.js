@@ -677,7 +677,7 @@ ${editModal}
   </div>
 </div>`;
 
-  return htmlShell(`Stats — \${slug}`, body, true, nonce, true);
+  return htmlShell(`Stats — ${linkTitle}`, body, true, nonce, true);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
