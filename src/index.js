@@ -264,8 +264,8 @@ function hamburgerBtn() {
 
 // ── HTML Shell ────────────────────────────────────────────────
 
-function htmlShell(title, bodyContent, withCharts = false, nonce = "") {
-  const n = nonce ? ` nonce="${nonce}"` : "";
+function htmlShell(title, bodyContent, withCharts = false, nonce = "", withQR = false) {
+  const n = nonce ? ` nonce="${nonce}"` : ""; // eslint-disable-line
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -280,6 +280,7 @@ function htmlShell(title, bodyContent, withCharts = false, nonce = "") {
 ${bodyContent}
 <script${n} src="/js/main.js"></script>
 ${withCharts ? `<script${n} src="/js/chartjs.min.js"></script><script${n} src="/js/chart.js"></script>` : ''}
+${withQR ? `<script${n} src="/js/qrcode.min.js"></script><script${n} src="/js/qr.js"></script>` : ''}
 </body>
 </html>`;
 }
@@ -586,7 +587,7 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const linkTitle = data.title || slug;
 
   const body = `
-<div class="wrapper">
+<div class="wrapper" data-qr-url="${fullUrl}">
   <header>
     ${hamburgerBtn()}
     <div class="brand">BlackCode <span>/</span> Shortener</div>
@@ -602,6 +603,10 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
           </button>
           <div class="link-card-dropdown" id="menu-detail-slug">
             <button type="button" class="dropdown-item" id="editBtn">${ICON_EDIT} Edit Link</button>
+            <button type="button" class="dropdown-item" id="qrBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+              Create QR Code
+            </button>
             <form method="POST" action="/admin/delete">
               <input type="hidden" name="_csrf" value="${csrfToken}">
               <input type="hidden" name="slug" value="${escHtml(slug)}">
@@ -657,9 +662,20 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   <footer><img src="/logo.png" alt="Logo"></footer>
 </div>
 ${sidebarHtml("")}
-${editModal}`;
+${editModal}
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-box" style="text-align:center;">
+    <div class="modal-title" style="text-align:left;">QR Code</div>
+    <div id="qrCanvas" style="display:inline-block;margin:16px auto;"></div>
+    <div style="margin-top:4px;font-size:12px;color:var(--muted);">${fullUrl}</div>
+    <div style="display:flex;gap:10px;justify-content:space-between;margin-top:20px;">
+      <button type="button" class="btn btn-danger" data-close-modal="qrModal">Close</button>
+      <button type="button" class="btn btn-primary" id="qrDownload">Download QR</button>
+    </div>
+  </div>
+</div>`;
 
-  return htmlShell(`Stats — ${slug}`, body, true, nonce);
+  return htmlShell(`Stats — \${slug}`, body, true, nonce, true);
 }
 
 // ── Main Handler ──────────────────────────────────────────────
@@ -684,7 +700,8 @@ export default {
       pathname.startsWith("/js/")    ||
       pathname === "/favicon.ico"    ||
       pathname === "/logo.png"       ||
-      pathname === "/BlackCode-Logo.png"
+      pathname === "/BlackCode-Logo.png" ||
+      pathname === "/qrlogo.png"
     ) {
       const assetResp = await env.ASSETS.fetch(request);
       const newHeaders = new Headers(assetResp.headers);
