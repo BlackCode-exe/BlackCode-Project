@@ -368,7 +368,7 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .dash-search {
   width:100%; background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius); color:var(--text); font-family:var(--font);
-  font-size:14px; padding:10px 14px 10px 38px; outline:none;
+  font-size:14px; padding:10px 14px 10px 42px; outline:none;
   transition:border-color 0.15s;
 }
 .dash-search:focus { border-color:var(--accent); }
@@ -389,3 +389,8 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .dash-row-right svg { color:var(--muted); }
 
 .dash-empty { color:var(--muted); font-size:13px; padding:16px 4px; display:none; }
+
+/* ── Link card title as hyperlink ── */
+.link-card-title-link { text-decoration:none; display:block; }
+.link-card-title-link .link-card-title { transition:color 0.15s; }
+.link-card-title-link:hover .link-card-title { color:var(--accent2); }
