@@ -672,7 +672,7 @@ ${editModal}
       </button>
     </div>
     <div id="qrCanvas" style="display:flex;justify-content:center;margin:12px 0;"></div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px;">/${escHtml(slug)}</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text);text-align:center;margin-bottom:14px;">${escHtml(linkTitle)}</div>
     <div style="display:flex;justify-content:center;">
       <button type="button" class="btn btn-primary" id="qrDownload">Download QR</button>
     </div>
