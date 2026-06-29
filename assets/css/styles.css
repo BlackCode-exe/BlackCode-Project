@@ -445,4 +445,4 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 }
 .qr-close-btn:hover { color:var(--text); }
 
-.qr-label { font-size:13px; font-weight:700; color:var(--text); margin-bottom:14px; }
+.qr-label { font-size:13px; font-weight:700; color:var(--text); margin-block:10px; }
