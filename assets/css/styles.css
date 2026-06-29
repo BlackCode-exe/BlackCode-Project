@@ -346,3 +346,46 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .detail-header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
 .detail-header-top .detail-title { margin-bottom:0; }
 .detail-created { font-size:11px; color:var(--muted); margin-top:8px; }
+
+/* ── Dashboard ── */
+.dash-summary {
+  display:flex; gap:12px; margin-bottom:20px;
+}
+.dash-stat {
+  flex:1; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:12px 16px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.dash-stat-label { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+.dash-stat-value { font-size:24px; font-weight:700; color:var(--accent); line-height:1; }
+
+.dash-search-wrap {
+  position:relative; display:flex; align-items:center;
+}
+.dash-search-icon {
+  position:absolute; left:12px; color:var(--muted); pointer-events:none; flex-shrink:0;
+}
+.dash-search {
+  width:100%; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font);
+  font-size:14px; padding:10px 14px 10px 38px; outline:none;
+  transition:border-color 0.15s;
+}
+.dash-search:focus { border-color:var(--accent); }
+
+.dash-list { display:flex; flex-direction:column; }
+
+.dash-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 4px; border-bottom:1px solid var(--border);
+  text-decoration:none; gap:12px;
+  transition:background 0.1s;
+}
+.dash-row:hover { background:var(--surface); border-radius:var(--radius); }
+.dash-row[hidden] { display:none; }
+.dash-row-title { font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
+.dash-row-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.dash-row-clicks { font-size:12px; font-weight:700; color:var(--muted); min-width:20px; text-align:right; }
+.dash-row-right svg { color:var(--muted); }
+
+.dash-empty { color:var(--muted); font-size:13px; padding:16px 4px; display:none; }
