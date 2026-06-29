@@ -345,7 +345,7 @@ ${sidebarHtml("links")}
     <div class="dash-search-wrap">
       <input type="text" id="dashSearch" class="dash-search" placeholder="Search links...">
     </div>
-    <div class="section-title" style="margin-top:24px;">Recent Links</div>
+    <div class="section-title">Recent Links</div>
     <div class="dash-list" id="dashList">${recentRows}</div>
   </main>
   <footer><img src="/logo.png" alt="Logo"></footer>
