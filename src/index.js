@@ -664,14 +664,16 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
 ${sidebarHtml("")}
 ${editModal}
 <div class="modal-overlay" id="qrModal">
-  <div class="modal-box" style="text-align:center;">
-    <div class="modal-title" style="text-align:left;">QR Code</div>
-    <div id="qrCanvas" style="display:inline-block;margin:16px auto;"></div>
-    <div style="margin-top:4px;font-size:12px;color:var(--muted);">${fullUrl}</div>
-    <div style="display:flex;gap:10px;justify-content:space-between;margin-top:20px;">
-      <button type="button" class="btn btn-danger" data-close-modal="qrModal">Close</button>
-      <button type="button" class="btn btn-primary" id="qrDownload">Download QR</button>
+  <div class="modal-box modal-box-qr">
+    <div class="qr-modal-header">
+      <span class="qr-modal-title">QR Code</span>
+      <button type="button" class="qr-close-btn" data-close-modal="qrModal">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
+    <div id="qrCanvas" style="display:flex;justify-content:center;margin:12px 0;"></div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;word-break:break-all;margin-bottom:14px;">${fullUrl}</div>
+    <button type="button" class="btn btn-primary" id="qrDownload" style="width:100%;justify-content:center;">Download QR</button>
   </div>
 </div>`;
 
