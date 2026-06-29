@@ -342,7 +342,6 @@ ${sidebarHtml("links")}
       <div class="dash-stat"><span class="dash-stat-label">Total Clicks</span><span class="dash-stat-value">${totalClicks}</span></div>
     </div>
     <div class="dash-search-wrap">
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dash-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="dashSearch" class="dash-search" placeholder="Search links...">
     </div>
     <div class="section-title" style="margin-top:24px;">Recent Links</div>
@@ -406,7 +405,7 @@ async function adminStatsPage(links, request, csrf = "") {
             <div class="link-card-main">
               <a href="/admin/link/${escHtml(l.slug)}" class="link-card-title-link"><div class="link-card-title">${escHtml(title)}</div></a>
               <div class="link-card-url-row">
-                <span class="link-card-url">${fullUrl}</span>
+                <span class="link-card-url link-card-url-plain">${fullUrl}</span>
                 <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
               </div>
               <div class="link-card-target">${escHtml(l.target)}</div>
