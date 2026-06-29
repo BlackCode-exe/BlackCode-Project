@@ -42,9 +42,8 @@
       const canvas  = document.createElement('canvas');
       canvas.width  = RENDER_SIZE;
       canvas.height = RENDER_SIZE;
-      canvas.style.width  = DISPLAY_SIZE + 'px';
-      canvas.style.height = DISPLAY_SIZE + 'px';
       canvas.style.borderRadius = '8px';
+      canvas.style.maxWidth = '100%';
       const ctx = canvas.getContext('2d');
 
       const qrImg  = new Image();
@@ -87,7 +86,7 @@
     qrDownload.addEventListener('click', () => {
       if (!finalCanvas) return;
       const link    = document.createElement('a');
-      link.download = 'qr-code.png';
+      link.download = 'QR-Code.png';
       link.href     = finalCanvas.toDataURL('image/png');
       link.click();
     });
