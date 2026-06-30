@@ -184,11 +184,26 @@ async function deleteLink(env, slug) {
 
 async function recordClick(env, slug, data, request) {
   // Filter bots and prefetch requests
-  const ua      = request.headers.get("User-Agent") || "";
-  const purpose = request.headers.get("Purpose") || request.headers.get("Sec-Purpose") || "";
-  const isBot   = /bot|crawler|spider|preview|prefetch|facebookexternalhit|whatsapp|telegram|twitter|slack|discord|linkedin|curl|python|java|ruby|go-http/i.test(ua);
-  const isPrefetch = purpose === "prefetch";
-  if (isBot || isPrefetch) return;
+  const ua       = request.headers.get("User-Agent") || "";
+  const accept   = request.headers.get("Accept") || "";
+  const acceptLang = request.headers.get("Accept-Language") || "";
+  const purpose  = request.headers.get("Purpose") || request.headers.get("Sec-Purpose") || "";
+  const secFetchMode = request.headers.get("Sec-Fetch-Mode") || "";
+  const secFetchDest = request.headers.get("Sec-Fetch-User") || "";
+
+  // Known bot / preview-fetcher signatures (platforms, scrapers, link-shorteners, social previews)
+  const isBot = /bot|crawler|spider|preview|prefetch|fetch|monitor|check|valid|scan|probe|headless|phantom|puppeteer|playwright|selenium|facebookexternalhit|whatsapp|telegram|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|kofi|ko-fi|bitly|bit\.ly|tinyurl|curl|wget|python-requests|python-urllib|java\/|ruby|go-http-client|okhttp|libwww|axios|node-fetch|postman|insomnia|apache-httpclient/i.test(ua);
+
+  // No User-Agent at all — almost certainly a script/bot, real browsers always send one
+  const noUA = !ua;
+
+  // Real browsers always send Accept and Accept-Language on navigation; bots/fetchers often omit them
+  const missingBrowserHeaders = !accept || !acceptLang;
+
+  // Purpose/Sec-Fetch headers used by browsers for prefetch/preload requests
+  const isPrefetch = purpose === "prefetch" || secFetchMode === "navigate" && secFetchDest === "";
+
+  if (isBot || noUA || (missingBrowserHeaders && !/mozilla/i.test(ua)) || isPrefetch) return;
 
   const cf      = request.cf || {};
   const country = cf.country || "Unknown";
