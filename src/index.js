@@ -348,7 +348,7 @@ ${sidebarHtml("links")}
 <div class="wrapper">
   <header>
     ${hamburgerBtn()}
-    <div class="brand">BlackCode <span>/</span> Shortener</div>
+    <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
   </header>
   <main>
     ${flashMsg}
@@ -375,7 +375,7 @@ ${sidebarHtml("add")}
 <div class="wrapper">
   <header>
     ${hamburgerBtn()}
-    <div class="brand">BlackCode <span>/</span> Shortener</div>
+    <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
   </header>
   <main>
     ${flashMsg}
@@ -478,7 +478,7 @@ ${sidebarHtml("stats")}
 <div class="wrapper">
   <header>
     ${hamburgerBtn()}
-    <div class="brand">BlackCode <span>/</span> Shortener</div>
+    <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
   </header>
   <main>
     <div class="stats-grid">
@@ -604,7 +604,7 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
 <div class="wrapper" data-qr-url="${fullUrl}">
   <header>
     ${hamburgerBtn()}
-    <div class="brand">BlackCode <span>/</span> Shortener</div>
+    <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
     <a href="/admin" class="back-link">← All Links</a>
   </header>
   <main>
