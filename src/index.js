@@ -183,29 +183,28 @@ async function deleteLink(env, slug) {
 }
 
 async function recordClick(env, slug, data, request) {
-  // Filter bots and prefetch requests
-  const ua       = request.headers.get("User-Agent") || "";
-  const accept   = request.headers.get("Accept") || "";
+  const ua         = request.headers.get("User-Agent") || "";
+  const accept     = request.headers.get("Accept") || "";
   const acceptLang = request.headers.get("Accept-Language") || "";
-  const purpose  = request.headers.get("Purpose") || request.headers.get("Sec-Purpose") || "";
-  const secFetchMode = request.headers.get("Sec-Fetch-Mode") || "";
-  const secFetchDest = request.headers.get("Sec-Fetch-User") || "";
+  const purpose    = request.headers.get("Purpose") || request.headers.get("Sec-Purpose") || "";
+  const cf         = request.cf || {};
 
-  // Known bot / preview-fetcher signatures (platforms, scrapers, link-shorteners, social previews)
-  const isBot = /bot|crawler|spider|preview|prefetch|fetch|monitor|check|valid|scan|probe|headless|phantom|puppeteer|playwright|selenium|facebookexternalhit|whatsapp|telegram|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|kofi|ko-fi|bitly|bit\.ly|tinyurl|curl|wget|python-requests|python-urllib|java\/|ruby|go-http-client|okhttp|libwww|axios|node-fetch|postman|insomnia|apache-httpclient/i.test(ua);
+  // 1. No UA = bot
+  if (!ua) return;
 
-  // No User-Agent at all — almost certainly a script/bot, real browsers always send one
-  const noUA = !ua;
+  // 2. Known bot UA signatures
+  const isBot = /bot|crawler|spider|preview|prefetch|fetch|monitor|check|valid|scan|probe|headless|phantom|puppeteer|playwright|selenium|facebookexternalhit|whatsapp|telegram|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|kofi|ko-fi|bitly|bit\.ly|tinyurl|curl|wget|python|ruby|go-http|okhttp|libwww|axios|node-fetch|postman|insomnia|apache-http/i.test(ua);
+  if (isBot) return;
 
-  // Real browsers always send Accept and Accept-Language on navigation; bots/fetchers often omit them
-  const missingBrowserHeaders = !accept || !acceptLang;
+  // 3. Prefetch/prerender headers
+  if (purpose === "prefetch" || purpose === "prerender") return;
 
-  // Purpose/Sec-Fetch headers used by browsers for prefetch/preload requests
-  const isPrefetch = purpose === "prefetch" || secFetchMode === "navigate" && secFetchDest === "";
+  // 4. Missing browser fingerprint — real browsers always send Accept-Language
+  if (!acceptLang) return;
 
-  if (isBot || noUA || (missingBrowserHeaders && !/mozilla/i.test(ua)) || isPrefetch) return;
-
-  const cf      = request.cf || {};
+  // 5. Cloudflare & major hosting ASNs (datacenter traffic, not real users)
+  const datacenterASNs = new Set([13335,209242,132892,395747,14789,16509,14618,15169,8075,20940,16625,2906,32934,63949,14061,18450,6939,3257,1239,7922]);
+  if (cf.asn && datacenterASNs.has(Number(cf.asn))) return;
   const country = cf.country || "Unknown";
   const city    = cf.city    || "Unknown";
   const device  = parseDevice(request.headers.get("User-Agent") || "");
