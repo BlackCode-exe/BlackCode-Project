@@ -287,7 +287,7 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .link-card-clicks strong { color:var(--text); }
 
 /* ── Icon btn small ── */
-.icon-btn-sm { width:24px; height:24px; flex-shrink:0; }
+.icon-btn-sm { width:20px; height:20px; flex-shrink:0; }
 
 /* ── Dropdown menu ── */
 .link-card-menu-wrap { position:relative; flex-shrink:0; }
