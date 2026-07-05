@@ -387,12 +387,12 @@ ${sidebarHtml("add")}
         <input type="text" name="title" placeholder="e.g. My Awesome Link">
       </div>
       <div class="form-group">
-        <label>Back-half (custom slug)</label>
+        <label>Back-half (custom path)</label>
         <input type="text" name="slug" placeholder="e.g. my-link" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
         <div class="input-hint">Only letters, numbers, hyphens, underscores. No spaces.</div>
       </div>
       <div class="form-group">
-        <label>Target URL</label>
+        <label>Destination URL</label>
         <input type="url" name="target" placeholder="https://example.com/very-long-url" required>
       </div>
       <button type="submit" class="btn btn-primary">Create Link</button>
@@ -462,7 +462,7 @@ async function adminStatsPage(links, request, csrf = "") {
         <input type="text" name="slug" id="edit_slug" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
       </div>
       <div class="form-group">
-        <label>Target URL</label>
+        <label>Destination URL</label>
         <input type="url" name="target" id="edit_target" required>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
@@ -580,7 +580,7 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
         <input type="text" name="slug" value="${escHtml(slug)}" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
       </div>
       <div class="form-group">
-        <label>Target URL</label>
+        <label>Destination URL</label>
         <input type="url" name="target" value="${escHtml(data.target)}" required>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
