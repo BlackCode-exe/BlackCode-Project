@@ -601,7 +601,7 @@ function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const linkTitle = data.title || slug;
 
   const body = `
-<div class="wrapper" data-qr-url="${fullUrl}">
+<div class="wrapper" data-qr-url="${fullUrl}" data-qr-title="${escHtml(linkTitle)}">
   <header>
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
