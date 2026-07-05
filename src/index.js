@@ -250,7 +250,7 @@ const ICON_LOGOUT= `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
 function sidebarHtml(active) {
   const nav = [
     { id: "links",  label: "Dashboard", href: "/admin",        icon: ICON_HOME  },
-    { id: "add",    label: "Add Link", href: "/admin/add",    icon: ICON_ADD   },
+    { id: "add",    label: "Create Link", href: "/admin/create",    icon: ICON_ADD   },
     { id: "stats",  label: "Stats",    href: "/admin/stats",  icon: ICON_STATS },
   ];
   return `
@@ -330,7 +330,7 @@ function adminLinksPage(links, request, flashMsg = "", csrf = "") {
   const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
 
   const recentRows = links.length === 0
-    ? `<div class="empty-state" style="padding:32px 0;"><strong>No links yet</strong>Add your first link via Add Link.</div>`
+    ? `<div class="empty-state" style="padding:32px 0;"><strong>No links yet</strong>Add your first link via Create Link.</div>`
     : links.map(l => {
         const title = l.title || l.slug;
         return `
@@ -380,7 +380,7 @@ ${sidebarHtml("add")}
   <main>
     ${flashMsg}
     <div class="section-title">Create New Short Link</div>
-    <form method="POST" action="/admin/add" style="max-width:480px;">
+    <form method="POST" action="/admin/create" style="max-width:480px;">
       <input type="hidden" name="_csrf" value="${csrf}">
       <div class="form-group">
         <label>Title</label>
@@ -400,7 +400,7 @@ ${sidebarHtml("add")}
   </main>
   <footer><img src="/logo.png" alt="Logo"></footer>
 </div>`;
-  return htmlShell("Add Link", body);
+  return htmlShell("Create Link", body);
 }
 
 async function adminStatsPage(links, request, csrf = "") {
@@ -409,7 +409,7 @@ async function adminStatsPage(links, request, csrf = "") {
   const host        = request.headers.get("host");
 
   const cards = links.length === 0
-    ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Add Link tab.</div>`
+    ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Create Link tab.</div>`
     : links.map(l => {
         const fullUrl = `https://${host}/${escHtml(l.slug)}`;
         const date    = l.created ? new Date(l.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
@@ -762,14 +762,14 @@ export default {
         return new Response(adminLinksPage(links, request, "", csrf || ""), { headers: htmlHeaders() });
       }
 
-      // GET /admin/add
-      if (pathname === "/admin/add" && method === "GET") {
+      // GET /admin/create
+      if (pathname === "/admin/create" && method === "GET") {
         const csrf = await getCsrfToken(request, env);
         return new Response(adminAddPage("", csrf || ""), { headers: htmlHeaders() });
       }
 
-      // POST /admin/add
-      if (pathname === "/admin/add" && method === "POST") {
+      // POST /admin/create
+      if (pathname === "/admin/create" && method === "POST") {
         if (!await validateCsrf(request, env)) return new Response("Invalid CSRF token.", { status: 403, headers: makeSecurityHeaders() });
         const form   = await request.formData();
         const slug   = (form.get("slug") || "").trim();
