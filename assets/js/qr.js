@@ -7,8 +7,10 @@
   const qrDownload = document.getElementById('qrDownload');
   if (!qrBtn || !qrModal || !qrCanvas) return;
 
-  const wrapper = document.querySelector('[data-qr-url]');
-  const url     = wrapper ? wrapper.dataset.qrUrl : window.location.href;
+  const wrapper  = document.querySelector('[data-qr-url]');
+  const url      = wrapper ? wrapper.dataset.qrUrl : window.location.href;
+  const rawTitle = wrapper ? (wrapper.dataset.qrTitle || "QR-Code") : "QR-Code";
+  const filename = "QR-" + rawTitle.replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") + ".png";
 
   const RENDER_SIZE  = 512; // actual canvas size (download resolution)
   const DISPLAY_SIZE = 300; // CSS display size
@@ -86,7 +88,7 @@
     qrDownload.addEventListener('click', () => {
       if (!finalCanvas) return;
       const link    = document.createElement('a');
-      link.download = 'QR-Code.png';
+      link.download = filename;
       link.href     = finalCanvas.toDataURL('image/png');
       link.click();
     });
