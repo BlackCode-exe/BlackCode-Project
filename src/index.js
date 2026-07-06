@@ -164,7 +164,7 @@ function parseReferrer(ref) {
 // ── KV Helpers ────────────────────────────────────────────────
 
 async function getLink(env, slug) {
-  return await env.KV_BINDING.get(`link:${slug}`, { type: "json", cacheTtl: 0 });
+  return await env.KV_BINDING.get(`link:${slug}`, { type: "json" });
 }
 
 async function saveLink(env, slug, target, title = "", existingData = null) {
