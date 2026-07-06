@@ -856,6 +856,6 @@ export default {
     }
 
     await recordClick(env, slug, data, request);
-    return redirect(data.target, 301);
+    return redirect(data.target, 302);
   },
 };
