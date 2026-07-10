@@ -29,7 +29,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy dist/index.js
           secrets: |
             ADMIN_PASSWORD
         env:
