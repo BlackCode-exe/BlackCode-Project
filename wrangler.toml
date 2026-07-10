@@ -1,5 +1,5 @@
-name = "blackcode-project"
-main = "src/index.js"
+name = "blackcode-shortener"
+main = "dist/index.js"
 compatibility_date = "2024-01-01"
 
 [assets]
@@ -8,4 +8,4 @@ binding = "ASSETS"
 
 [[kv_namespaces]]
 binding = "KV_BINDING"
-id = "47bf846d367a43b382412b630f7a6e8a"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

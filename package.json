@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "build": "esbuild src/index.js --bundle --outfile=dist/index.js --format=esm --target=es2022 --minify",
+    "dev": "npm run build && wrangler dev dist/index.js",
+    "deploy": "npm run build && wrangler deploy dist/index.js"
   },
   "devDependencies": {
+    "esbuild": "^0.21.0",
     "wrangler": "^3.0.0"
   }
 }
