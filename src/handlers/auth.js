@@ -1,4 +1,4 @@
-import { htmlHeaders, makeSecurityHeaders, redirect, setCookie } from "../utils/security.js";
+import { htmlHeaders, makeSecurityHeaders, redirect, setCookie, generateNonce } from "../utils/security.js";
 import { safeCompare, getClientIp, isRateLimited, recordFailedAttempt, clearRateLimit, createSession, destroySession } from "../utils/security.js";
 import { COOKIE_TTL } from "../utils/constants.js";
 import { loginPage } from "../pages/login.js";
@@ -7,7 +7,8 @@ export async function handleLogin(request, env) {
   if (request.method === "POST") {
     const ip = getClientIp(request);
     if (await isRateLimited(env, ip)) {
-      return new Response(loginPage(true, true), { headers: htmlHeaders() });
+      const nonce = generateNonce();
+      return new Response(loginPage(true, true, nonce), { headers: htmlHeaders(nonce) });
     }
     const form = await request.formData();
     const pwd  = form.get("password") || "";
@@ -25,9 +26,11 @@ export async function handleLogin(request, env) {
       });
     }
     await recordFailedAttempt(env, ip);
-    return new Response(loginPage(true), { headers: htmlHeaders() });
+    const nonce = generateNonce();
+    return new Response(loginPage(true, false, nonce), { headers: htmlHeaders(nonce) });
   }
-  return new Response(loginPage(), { headers: htmlHeaders() });
+  const nonce = generateNonce();
+  return new Response(loginPage(false, false, nonce), { headers: htmlHeaders(nonce) });
 }
 
 export async function handleLogout(request, env) {

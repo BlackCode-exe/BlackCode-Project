@@ -2,7 +2,7 @@ import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
 
-export function adminStatsPage(links, request, csrf = "") {
+export function adminStatsPage(links, request, csrf = "", nonce = "") {
   const totalLinks  = links.length;
   const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
   const host        = request.headers.get("host");
@@ -90,5 +90,5 @@ ${sidebarHtml("stats")}
   <footer><img src="/logo.png" alt="Logo"></footer>
 </div>
 ${editModal}`;
-  return htmlShell("Stats", body);
+  return htmlShell("Stats", body, false, nonce);
 }

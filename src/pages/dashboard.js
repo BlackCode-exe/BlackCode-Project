@@ -1,7 +1,7 @@
 import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 
-export function adminLinksPage(links, request, flashMsg = "", csrf = "") {
+export function adminLinksPage(links, request, flashMsg = "", csrf = "", nonce = "") {
   const totalLinks  = links.length;
   const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
 
@@ -41,5 +41,5 @@ ${sidebarHtml("links")}
   <footer><img src="/logo.png" alt="Logo"></footer>
 </div>`;
 
-  return htmlShell("Dashboard", body);
+  return htmlShell("Dashboard", body, false, nonce);
 }

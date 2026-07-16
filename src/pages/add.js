@@ -1,6 +1,6 @@
 import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
 
-export function adminAddPage(flashMsg = "", csrf = "") {
+export function adminAddPage(flashMsg = "", csrf = "", nonce = "") {
   const body = `
 ${sidebarHtml("add")}
 <div class="wrapper">
@@ -31,5 +31,5 @@ ${sidebarHtml("add")}
   </main>
   <footer><img src="/logo.png" alt="Logo"></footer>
 </div>`;
-  return htmlShell("Create Link", body);
+  return htmlShell("Create Link", body, false, nonce);
 }

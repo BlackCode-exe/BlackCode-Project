@@ -1,6 +1,6 @@
 import { htmlShell } from "../utils/shell.js";
 
-export function loginPage(error = false, locked = false) {
+export function loginPage(error = false, locked = false, nonce = "") {
   const msg = locked
     ? `<div class="alert alert-error">Too many failed attempts. Try again in 15 minutes.</div>`
     : error
@@ -21,5 +21,5 @@ export function loginPage(error = false, locked = false) {
   </div>
   <footer style="border:none;padding:8px;"><img src="/logo.png" alt="Logo"></footer>
 </div>`;
-  return htmlShell("Login", body);
+  return htmlShell("Login", body, false, nonce);
 }
