@@ -10,11 +10,3 @@ export const LOCKOUT_TTL  = 60 * 15;
 // so a version query string is what forces both the edge and the
 // browser to fetch the new file instead of serving a cached HIT.
 export const ASSET_VERSION = "2";
-
-// Bump this manually whenever assets/css or assets/js change. Cloudflare's
-// workers.dev edge cache can hold a stale copy of static assets well past
-// deploy time with no dashboard purge option available (workers.dev is a
-// shared Cloudflare-owned zone, not a zone you control). Appending ?v=N to
-// asset URLs forces both the edge cache and the browser to treat it as a
-// brand-new resource instead of revalidating the old cached one.
-export const ASSET_VERSION = 2;
