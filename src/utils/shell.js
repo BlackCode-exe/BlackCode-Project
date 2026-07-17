@@ -1,4 +1,5 @@
 import { ICON_HOME, ICON_ADD, ICON_STATS, ICON_LOGOUT } from "./icons.js";
+import { ASSET_VERSION } from "./constants.js";
 
 export function sidebarHtml(active) {
   const nav = [
@@ -39,13 +40,13 @@ export function htmlShell(title, bodyContent, withCharts = false, nonce = "", wi
   <meta name="robots" content="noindex, nofollow">
   <title>${title} — BlackCode Shortener</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}">
 </head>
 <body>
 ${bodyContent}
-<script${n} src="/js/main.js"></script>
-${withCharts ? `<script${n} src="/js/chartjs.min.js"></script><script${n} src="/js/chart.js"></script>` : ""}
-${withQR ? `<script${n} src="/js/qrcode.min.js"></script><script${n} src="/js/qr.js"></script>` : ""}
+<script${n} src="/js/main.js?v=${ASSET_VERSION}"></script>
+${withCharts ? `<script${n} src="/js/chartjs.min.js?v=${ASSET_VERSION}"></script><script${n} src="/js/chart.js?v=${ASSET_VERSION}"></script>` : ""}
+${withQR ? `<script${n} src="/js/qrcode.min.js?v=${ASSET_VERSION}"></script><script${n} src="/js/qr.js?v=${ASSET_VERSION}"></script>` : ""}
 </body>
 </html>`;
 }
