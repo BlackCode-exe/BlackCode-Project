@@ -1,8 +1,8 @@
 import { makeSecurityHeaders, htmlHeaders, redirect, isAuthenticated } from "./utils/security.js";
-import { ASSET_VERSION } from "./utils/constants.js";
+import { ASSET_VERSION } from "./utils/asset-version.js";
 import { getLink, recordClick } from "./utils/kv.js";
 import { handleLogin, handleLogout } from "./handlers/auth.js";
-import { handleDashboard, handleAdd, handleStats, handleDetail } from "./handlers/admin.js";
+import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking } from "./handlers/admin.js";
 import { handleCreate, handleEdit, handleDelete } from "./handlers/links.js";
 import { handleTrack, handleKeyseed, handleTrackLogs, handleKeyseedLogs, handleTrackStats } from "./handlers/tracking.js";
 
@@ -37,7 +37,7 @@ export default {
 
     // ── Tracking / keyseed API (Railway port) ─────────────────
     if (pathname === "/api/track" && method === "POST")       return handleTrack(request, env, ctx);
-    if (pathname === "/api/keyseed" && method === "GET")       return handleKeyseed(request, env);
+    if (pathname === "/api/keyseed" && method === "GET")       return handleKeyseed(request, env, ctx);
     if (pathname === "/api/logs" && method === "GET")          return handleTrackLogs(request, env);
     if (pathname === "/api/keyseed-logs" && method === "GET")  return handleKeyseedLogs(request, env);
     if (pathname === "/api/stats" && method === "GET")         return handleTrackStats(request, env);
@@ -56,6 +56,7 @@ export default {
       if (pathname === "/admin/edit" && method === "POST")     return handleEdit(request, env);
       if (pathname === "/admin/delete" && method === "POST")   return handleDelete(request, env);
       if (pathname === "/admin/stats" && method === "GET")     return handleStats(request, env);
+      if (pathname === "/admin/tracking" && method === "GET")  return handleTracking(request, env);
 
       const detailMatch = pathname.match(/^\/admin\/link\/(.+)$/);
       if (detailMatch && method === "GET") return handleDetail(request, env, detailMatch[1]);

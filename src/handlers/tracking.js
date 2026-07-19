@@ -5,6 +5,20 @@ const TRACK_LOG_KEY   = "cheat_track_log";
 const KEYSEED_LOG_KEY = "keyseed_access_log";
 const LOG_CAP         = 5000;
 
+// Emergency kill-switch: set this KV key (any truthy value) from the
+// Cloudflare dashboard to instantly disable /api/keyseed without waiting
+// on a redeploy. Delete the key (or set it empty) to re-enable.
+const KEYSEED_KILL_SWITCH_KEY = "keyseed_kill_switch";
+
+// Cross-IP brute-force detection for /api/keyseed. Rate limiting alone only
+// caps a single IP; this catches distributed attempts (rotating proxies)
+// hitting the endpoint with a wrong/guessed X-Bc-Auth from many IPs at once.
+const GLOBAL_UNAUTH_KEY        = "keyseed_global_unauthorized";
+const GLOBAL_UNAUTH_WINDOW     = 300;  // 5 minutes
+const GLOBAL_UNAUTH_THRESHOLD  = 15;
+const ALERT_COOLDOWN_KEY       = "keyseed_alert_cooldown";
+const ALERT_COOLDOWN_SECONDS   = 900;  // don't re-alert more than once per 15 min
+
 async function appendLog(env, key, entry) {
   const log = await env.KV_BINDING.get(key, { type: "json" }) || [];
   log.push(entry);
@@ -12,8 +26,39 @@ async function appendLog(env, key, entry) {
   await env.KV_BINDING.put(key, JSON.stringify(log));
 }
 
+export async function getTrackLog(env) {
+  return await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
+}
+
 function jsonResponse(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+}
+
+async function flagGlobalUnauthorized(env, ctx) {
+  const now  = Date.now();
+  const data = await env.KV_BINDING.get(GLOBAL_UNAUTH_KEY, { type: "json" });
+  let count  = 1;
+  if (data && now - data.windowStart < GLOBAL_UNAUTH_WINDOW * 1000) {
+    count = data.count + 1;
+    await env.KV_BINDING.put(GLOBAL_UNAUTH_KEY, JSON.stringify({ windowStart: data.windowStart, count }), { expirationTtl: GLOBAL_UNAUTH_WINDOW });
+  } else {
+    await env.KV_BINDING.put(GLOBAL_UNAUTH_KEY, JSON.stringify({ windowStart: now, count: 1 }), { expirationTtl: GLOBAL_UNAUTH_WINDOW });
+  }
+
+  if (count >= GLOBAL_UNAUTH_THRESHOLD && env.DISCORD_ALERT_WEBHOOK) {
+    const cooldown = await env.KV_BINDING.get(ALERT_COOLDOWN_KEY);
+    if (!cooldown) {
+      await env.KV_BINDING.put(ALERT_COOLDOWN_KEY, "1", { expirationTtl: ALERT_COOLDOWN_SECONDS });
+      const alert = fetch(env.DISCORD_ALERT_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `🚨 **/api/keyseed**: ${count} unauthorized attempts in the last ${GLOBAL_UNAUTH_WINDOW / 60} minutes across possibly multiple IPs. Could be a leaked SEED_AUTH_KEY being probed. Kill-switch is available via the \`${KEYSEED_KILL_SWITCH_KEY}\` KV key if you need to cut access immediately.`,
+        }),
+      }).catch(() => {});
+      if (ctx) ctx.waitUntil(alert);
+    }
+  }
 }
 
 // ── POST /api/track ──────────────────────────────────────────
@@ -22,12 +67,12 @@ export async function handleTrack(request, env, ctx) {
   let data;
   try { data = await request.json(); } catch { data = {}; }
 
-  const clientIp    = getClientIp(request);
-  const cheats       = data.cheats || "Unknown";
-  const eventRaw     = data.event || "unknown_event";
+  const clientIp = getClientIp(request);
+  const game      = data.game || "Unknown";
+  const eventRaw  = data.eventid || "unknown_event";
   const renpyVersion = data.renpy_version || "Unknown";
   const platform     = data.platform || "Unknown";
-  const secret       = data.secret || "";
+  const secret        = data.secret || "";
 
   if (!await safeCompare(secret, env.SECRET_KEY || "")) {
     return jsonResponse({ status: "unauthorized" }, 401);
@@ -38,12 +83,12 @@ export async function handleTrack(request, env, ctx) {
 
   // request.cf gives geo for free — no external ip-api.com call needed like Railway did
   const cf      = request.cf || {};
-  const country = cf.country     || "Unknown";
-  const region  = cf.region      || "Unknown";
-  const city    = cf.city        || "Unknown";
-  const event   = eventRaw.toLowerCase().replace(/ /g, "_").replace(/-/g, "_").slice(0, 40);
+  const country = cf.country || "Unknown";
+  const region  = cf.region  || "Unknown";
+  const city    = cf.city    || "Unknown";
+  const eventid = eventRaw.toLowerCase().replace(/ /g, "_").replace(/-/g, "_").slice(0, 40);
 
-  const entry = { ts: Date.now(), country, region, city, cheats, event, renpy_version: renpyVersion, platform };
+  const entry = { ts: Date.now(), country, region, city, game, eventid, renpy_version: renpyVersion, platform };
 
   const task = (async () => {
     await appendLog(env, TRACK_LOG_KEY, entry);
@@ -55,7 +100,7 @@ export async function handleTrack(request, env, ctx) {
             method: "POST",
             body: JSON.stringify({
               client_id: crypto.randomUUID(),
-              events: [{ name: event, params: { cheats, country, region, city, renpy_version: renpyVersion, platform } }],
+              events: [{ name: eventid, params: { game, country, region, city, renpy_version: renpyVersion, platform } }],
             }),
           }
         );
@@ -73,7 +118,10 @@ export async function handleTrack(request, env, ctx) {
 //   - auth via header X-Bc-Auth
 //   - success body = raw KEYSEED_RAW bytes, Content-Type: application/octet-stream
 //   - never wrapped in JSON, never re-encoded
-export async function handleKeyseed(request, env) {
+export async function handleKeyseed(request, env, ctx) {
+  const killed = await env.KV_BINDING.get(KEYSEED_KILL_SWITCH_KEY);
+  if (killed) return jsonResponse({ status: "disabled" }, 503);
+
   const clientIp  = getClientIp(request);
   const userAgent = request.headers.get("User-Agent") || "";
 
@@ -86,6 +134,7 @@ export async function handleKeyseed(request, env) {
   const secret = request.headers.get("X-Bc-Auth") || "";
   if (!await safeCompare(secret, env.SEED_AUTH_KEY || "")) {
     await appendLog(env, KEYSEED_LOG_KEY, { ts: Date.now(), status: "UNAUTHORIZED", ip: clientIp, ua: userAgent });
+    await flagGlobalUnauthorized(env, ctx);
     return jsonResponse({ status: "unauthorized" }, 401);
   }
 
@@ -117,7 +166,7 @@ export async function handleTrackLogs(request, env) {
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const log = await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
   const lines = log.map(e =>
-    `${new Date(e.ts).toISOString()} | Country: ${e.country} | Region: ${e.region} | City: ${e.city} | Cheats: ${e.cheats} | Event: ${e.event} | RenPy: ${e.renpy_version} | Platform: ${e.platform}`
+    `${new Date(e.ts).toISOString()} | Country: ${e.country} | Region: ${e.region} | City: ${e.city} | Game: ${e.game} | EventID: ${e.eventid} | RenPy: ${e.renpy_version} | Platform: ${e.platform}`
   ).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
 }
@@ -135,17 +184,17 @@ export async function handleTrackStats(request, env) {
 
   const counts = new Map();
   for (const e of log) {
-    const key = `${e.cheats}||${e.event}||${e.renpy_version}||${e.platform}`;
+    const key = `${e.game}||${e.eventid}||${e.renpy_version}||${e.platform}`;
     counts.set(key, (counts.get(key) || 0) + 1);
   }
   const grouped = {};
   for (const [key, count] of counts) {
-    const [cheats, event, renpy_version, platform] = key.split("||");
-    (grouped[cheats] ||= []).push({ event_name: event, renpy_version, platform, usage_count: count });
+    const [game, eventid, renpy_version, platform] = key.split("||");
+    (grouped[game] ||= []).push({ eventid, renpy_version, platform, usage_count: count });
   }
   const result = Object.entries(grouped)
-    .map(([cheats, events]) => ({
-      cheats,
+    .map(([game, events]) => ({
+      game,
       events: events.sort((a, b) => b.usage_count - a.usage_count),
       total_usage: events.reduce((s, e) => s + e.usage_count, 0),
     }))

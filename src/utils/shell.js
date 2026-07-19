@@ -1,11 +1,12 @@
-import { ICON_HOME, ICON_ADD, ICON_STATS, ICON_LOGOUT } from "./icons.js";
-import { ASSET_VERSION } from "./constants.js";
+import { ICON_HOME, ICON_ADD, ICON_STATS, ICON_LOGOUT, ICON_ACTIVITY } from "./icons.js";
+import { ASSET_VERSION } from "./asset-version.js";
 
 export function sidebarHtml(active) {
   const nav = [
-    { id: "links",  label: "Dashboard", href: "/admin",        icon: ICON_HOME  },
-    { id: "add",    label: "Add Link",  href: "/admin/add",    icon: ICON_ADD   },
-    { id: "stats",  label: "Stats",     href: "/admin/stats",  icon: ICON_STATS },
+    { id: "links",     label: "Dashboard", href: "/admin",           icon: ICON_HOME     },
+    { id: "add",       label: "Add Link",  href: "/admin/add",       icon: ICON_ADD      },
+    { id: "stats",     label: "Stats",     href: "/admin/stats",     icon: ICON_STATS    },
+    { id: "tracking",  label: "Tracking",  href: "/admin/tracking",  icon: ICON_ACTIVITY },
   ];
   return `
 <div class="sidebar-overlay" id="sidebarOverlay"></div>

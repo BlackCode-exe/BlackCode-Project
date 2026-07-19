@@ -9,8 +9,6 @@ export const LOCKOUT_TTL  = 60 * 15;
 // indefinitely (no dashboard purge available for workers.dev domains),
 // so a version query string is what forces both the edge and the
 // browser to fetch the new file instead of serving a cached HIT.
-export const ASSET_VERSION = "2";
-
 // Tracking/keyseed endpoints (ported from Railway service)
 export const TRACK_RATE_MAX      = 10;
 export const TRACK_RATE_WINDOW   = 60;

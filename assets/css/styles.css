@@ -445,3 +445,12 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .qr-close-btn:hover { color:var(--text); }
 
 .qr-label { font-size:15px; font-weight:700; color:var(--text); margin-block:10px; }
+
+/* Tracking log page */
+.track-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; }
+.track-table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
+.track-table th { text-align:left; padding:10px 14px; color:var(--muted); font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:0.04em; border-bottom:1px solid var(--border); }
+.track-table td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text); }
+.track-table tr:last-child td { border-bottom:none; }
+.track-table tr:hover td { background:var(--surface2); }
+.track-table-empty { color:var(--muted); text-align:center; padding:24px !important; }
