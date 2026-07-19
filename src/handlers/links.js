@@ -5,7 +5,7 @@ import { flash } from "../utils/helpers.js";
 import { adminAddPage } from "../pages/add.js";
 import { adminLinksPage } from "../pages/dashboard.js";
 
-const RESERVED = ["admin","favicon.ico","logo.png","fonts","css","js","robots.txt","qrlogo.png","BlackCode-Logo.png"];
+const RESERVED = ["admin","api","favicon.ico","logo.png","fonts","css","js","robots.txt","qrlogo.png","BlackCode-Logo.png"];
 
 export async function handleCreate(request, env) {
   if (!await validateCsrf(request, env)) {

@@ -101,6 +101,24 @@ export async function clearRateLimit(env, ip) {
   await env.KV_BINDING.delete(`rl:${ip}`);
 }
 
+// Generic fixed-window rate limiter, reusable by any endpoint (not just admin
+// login). windowStart is stored in the value itself rather than relying on
+// KV's expirationTtl semantics, since re-putting a key resets its TTL — this
+// keeps the window boundary accurate across repeated requests within it.
+export async function checkRateLimit(env, keyPrefix, ip, max, windowSeconds) {
+  const key  = `${keyPrefix}:${ip}`;
+  const now  = Date.now();
+  const data = await env.KV_BINDING.get(key, { type: "json" });
+  if (data && now - data.windowStart < windowSeconds * 1000) {
+    if (data.count >= max) return false;
+    data.count++;
+    await env.KV_BINDING.put(key, JSON.stringify(data), { expirationTtl: windowSeconds });
+    return true;
+  }
+  await env.KV_BINDING.put(key, JSON.stringify({ windowStart: now, count: 1 }), { expirationTtl: windowSeconds });
+  return true;
+}
+
 // ── Session ───────────────────────────────────────────────────
 
 export function getSessionToken(request) {

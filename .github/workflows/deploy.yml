@@ -31,5 +31,17 @@ jobs:
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           secrets: |
             ADMIN_PASSWORD
+            SECRET_KEY
+            SEED_AUTH_KEY
+            LOGS_PASSWORD
+            KEYSEED_RAW
+            GA4_MEASUREMENT_ID
+            GA4_API_SECRET
         env:
           ADMIN_PASSWORD: ${{ secrets.CF_ADMIN_PASSWORD }}
+          SECRET_KEY: ${{ secrets.CF_SECRET_KEY }}
+          SEED_AUTH_KEY: ${{ secrets.CF_SEED_AUTH_KEY }}
+          LOGS_PASSWORD: ${{ secrets.CF_LOGS_PASSWORD }}
+          KEYSEED_RAW: ${{ secrets.CF_KEYSEED_RAW }}
+          GA4_MEASUREMENT_ID: ${{ secrets.CF_GA4_MEASUREMENT_ID }}
+          GA4_API_SECRET: ${{ secrets.CF_GA4_API_SECRET }}

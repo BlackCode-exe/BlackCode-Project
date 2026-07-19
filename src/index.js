@@ -4,9 +4,10 @@ import { getLink, recordClick } from "./utils/kv.js";
 import { handleLogin, handleLogout } from "./handlers/auth.js";
 import { handleDashboard, handleAdd, handleStats, handleDetail } from "./handlers/admin.js";
 import { handleCreate, handleEdit, handleDelete } from "./handlers/links.js";
+import { handleTrack, handleKeyseed, handleTrackLogs, handleKeyseedLogs, handleTrackStats } from "./handlers/tracking.js";
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url      = new URL(request.url);
     const pathname = url.pathname;
     const method   = request.method;
@@ -33,6 +34,13 @@ export default {
       Object.entries(makeSecurityHeaders()).forEach(([k, v]) => newHeaders.set(k, v));
       return new Response(assetResp.body, { status: assetResp.status, headers: newHeaders });
     }
+
+    // ── Tracking / keyseed API (Railway port) ─────────────────
+    if (pathname === "/api/track" && method === "POST")       return handleTrack(request, env, ctx);
+    if (pathname === "/api/keyseed" && method === "GET")       return handleKeyseed(request, env);
+    if (pathname === "/api/logs" && method === "GET")          return handleTrackLogs(request, env);
+    if (pathname === "/api/keyseed-logs" && method === "GET")  return handleKeyseedLogs(request, env);
+    if (pathname === "/api/stats" && method === "GET")         return handleTrackStats(request, env);
 
     // ── Auth routes ───────────────────────────────────────────
     if (pathname === "/admin/login")  return handleLogin(request, env);
