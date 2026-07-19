@@ -24,7 +24,7 @@ ${sidebarHtml("tracking")}
 <div class="wrapper">
   <header>
     ${hamburgerBtn()}
-    <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
+    <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
   </header>
   <main>
     <div class="stats-grid">
