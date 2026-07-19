@@ -111,7 +111,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   <header>
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Shortener</a>
-    <a href="/admin" class="back-link">← All Links</a>
+    <a href="/admin/stats" class="back-link">← All Links</a>
   </header>
   <main>
     <div class="detail-header">
