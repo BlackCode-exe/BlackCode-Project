@@ -1,5 +1,5 @@
 {
-  "name": "blackcode-shortener",
+  "name": "blackcode-project",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -8,7 +8,7 @@
     "deploy": "npm run build && wrangler deploy dist/index.js"
   },
   "devDependencies": {
-    "esbuild": "^0.21.0",
-    "wrangler": "^3.0.0"
+    "esbuild": "^0.28.1",
+    "wrangler": "^4.113.0"
   }
 }
