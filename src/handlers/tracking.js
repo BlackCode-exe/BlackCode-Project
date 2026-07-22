@@ -1,5 +1,5 @@
 import { safeCompare, getClientIp, checkRateLimit } from "../utils/security.js";
-import { TRACK_RATE_MAX, TRACK_RATE_WINDOW, KEYSEED_RATE_MAX, KEYSEED_RATE_WINDOW } from "../utils/constants.js";
+import { TRACK_RATE_MAX, TRACK_RATE_WINDOW, KEYSEED_RATE_MAX, KEYSEED_RATE_WINDOW, ADMIN_API_RATE_MAX, ADMIN_API_RATE_WINDOW } from "../utils/constants.js";
 
 const TRACK_LOG_KEY   = "cheat_track_log";
 const KEYSEED_LOG_KEY = "keyseed_access_log";
@@ -157,12 +157,22 @@ export async function handleKeyseed(request, env, ctx) {
 
 // ── GET /api/logs, /api/keyseed-logs, /api/stats ──────────────
 // Auth: header X-Bc-Auth (changed from Railway's ?key= query string per your call)
+//
+// Rate limited per-IP same as /api/track and /api/keyseed: without this,
+// LOGS_PASSWORD could be brute-forced with unlimited attempts since there's
+// no lockout mechanism here (unlike /admin/login).
 function checkAdminAuth(request, env) {
   const secret = request.headers.get("X-Bc-Auth") || "";
   return safeCompare(secret, env.LOGS_PASSWORD || "");
 }
 
+async function adminApiRateLimited(request, env) {
+  const clientIp = getClientIp(request);
+  return !await checkRateLimit(env, "rl:admin-api", clientIp, ADMIN_API_RATE_MAX, ADMIN_API_RATE_WINDOW);
+}
+
 export async function handleTrackLogs(request, env) {
+  if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const log = await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
   const lines = log.map(e =>
@@ -172,6 +182,7 @@ export async function handleTrackLogs(request, env) {
 }
 
 export async function handleKeyseedLogs(request, env) {
+  if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const log = await env.KV_BINDING.get(KEYSEED_LOG_KEY, { type: "json" }) || [];
   const lines = log.map(e => `${new Date(e.ts).toISOString()} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
@@ -179,6 +190,7 @@ export async function handleKeyseedLogs(request, env) {
 }
 
 export async function handleTrackStats(request, env) {
+  if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const log = await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
 

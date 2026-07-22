@@ -67,7 +67,7 @@ export default {
     // ── Root page ─────────────────────────────────────────────
     const slug = pathname.slice(1);
     if (!slug) {
-      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Shortener</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="root-page"><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="root-page"><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
       return new Response(html, { headers: htmlHeaders() });
     }
 

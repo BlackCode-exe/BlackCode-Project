@@ -14,3 +14,10 @@ export const TRACK_RATE_MAX      = 10;
 export const TRACK_RATE_WINDOW   = 60;
 export const KEYSEED_RATE_MAX    = 5;
 export const KEYSEED_RATE_WINDOW = 60;
+
+// /api/logs, /api/keyseed-logs, /api/stats — previously had no rate limit at
+// all, meaning LOGS_PASSWORD could be brute-forced with unlimited attempts.
+// Generous enough for normal dashboard refreshes, tight enough to slow down
+// brute force to a crawl.
+export const ADMIN_API_RATE_MAX    = 15;
+export const ADMIN_API_RATE_WINDOW = 60;
