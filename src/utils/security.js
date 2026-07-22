@@ -159,3 +159,30 @@ export async function destroySession(request, env) {
   const token = getSessionToken(request);
   if (token) await env.KV_BINDING.delete(`session:${token}`);
 }
+
+// ── Login CSRF (double-submit cookie, pre-session) ────────────
+// The login form itself has no session yet, so the session-bound CSRF
+// token above doesn't apply here. This uses a double-submit cookie
+// instead: the server hands out a random token in both an HttpOnly
+// cookie and a hidden form field. A cross-site request can't reproduce
+// a matching pair (SameSite=Strict keeps the cookie from riding along
+// with a cross-origin submission), so a mismatch/missing token means
+// the POST didn't originate from this login page.
+
+export function setLoginCsrfCookie(value, maxAge = 600) {
+  return `login_csrf=${value}; Max-Age=${maxAge}; Path=/admin/login; HttpOnly; SameSite=Strict; Secure`;
+}
+
+export function getLoginCsrfCookie(request) {
+  const cookie = request.headers.get("Cookie") || "";
+  const match  = cookie.match(/login_csrf=([^;]+)/);
+  return match ? match[1] : null;
+}
+
+export async function validateLoginCsrf(request) {
+  const form      = await request.clone().formData();
+  const submitted = form.get("_csrf") || "";
+  const expected  = getLoginCsrfCookie(request) || "";
+  if (!expected || !submitted) return false;
+  return await safeCompare(submitted, expected);
+}

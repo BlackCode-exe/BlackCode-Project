@@ -1,6 +1,6 @@
 import { htmlShell } from "../utils/shell.js";
 
-export function loginPage(error = false, locked = false, nonce = "") {
+export function loginPage(error = false, locked = false, nonce = "", csrfToken = "") {
   const msg = locked
     ? `<div class="alert alert-error">Too many failed attempts. Try again in 15 minutes.</div>`
     : error
@@ -12,6 +12,7 @@ export function loginPage(error = false, locked = false, nonce = "") {
     <div class="login-title"><span>BlackCode</span> Project</div>
     ${msg}
     <form method="POST" action="/admin/login">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <div class="form-group">
         <label>Admin Password</label>
         <input type="password" name="password" autofocus required>

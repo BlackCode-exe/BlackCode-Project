@@ -1,5 +1,6 @@
 import { htmlHeaders, makeSecurityHeaders, redirect, setCookie, generateNonce } from "../utils/security.js";
 import { safeCompare, getClientIp, isRateLimited, recordFailedAttempt, clearRateLimit, createSession, destroySession } from "../utils/security.js";
+import { generateToken, setLoginCsrfCookie, validateLoginCsrf } from "../utils/security.js";
 import { COOKIE_TTL } from "../utils/constants.js";
 import { loginPage } from "../pages/login.js";
 
@@ -10,6 +11,16 @@ export async function handleLogin(request, env) {
       const nonce = generateNonce();
       return new Response(loginPage(true, true, nonce), { headers: htmlHeaders(nonce) });
     }
+
+    const csrfOk = await validateLoginCsrf(request);
+    if (!csrfOk) {
+      const nonce = generateNonce();
+      const csrfToken = generateToken();
+      return new Response(loginPage(true, false, nonce, csrfToken), {
+        headers: { ...htmlHeaders(nonce), "Set-Cookie": setLoginCsrfCookie(csrfToken) },
+      });
+    }
+
     const form = await request.formData();
     const pwd  = form.get("password") || "";
     const ok   = await safeCompare(pwd, env.ADMIN_PASSWORD);
@@ -27,10 +38,16 @@ export async function handleLogin(request, env) {
     }
     await recordFailedAttempt(env, ip);
     const nonce = generateNonce();
-    return new Response(loginPage(true, false, nonce), { headers: htmlHeaders(nonce) });
+    const csrfToken = generateToken();
+    return new Response(loginPage(true, false, nonce, csrfToken), {
+      headers: { ...htmlHeaders(nonce), "Set-Cookie": setLoginCsrfCookie(csrfToken) },
+    });
   }
   const nonce = generateNonce();
-  return new Response(loginPage(false, false, nonce), { headers: htmlHeaders(nonce) });
+  const csrfToken = generateToken();
+  return new Response(loginPage(false, false, nonce, csrfToken), {
+    headers: { ...htmlHeaders(nonce), "Set-Cookie": setLoginCsrfCookie(csrfToken) },
+  });
 }
 
 export async function handleLogout(request, env) {
