@@ -9,7 +9,7 @@ export function loginPage(error = false, locked = false, nonce = "") {
   const body = `
 <div class="login-wrap">
   <div class="login-box">
-    <div class="login-title"><span>BlackCode</span> Shortener</div>
+    <div class="login-title"><span>BlackCode</span> Project</div>
     ${msg}
     <form method="POST" action="/admin/login">
       <div class="form-group">
