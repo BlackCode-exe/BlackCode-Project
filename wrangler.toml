@@ -2,6 +2,10 @@ name = "blackcode-project"
 main = "dist/index.js"
 compatibility_date = "2024-01-01"
 
+[observability]
+enabled = true
+
+
 [assets]
 directory = "./assets"
 binding = "ASSETS"
