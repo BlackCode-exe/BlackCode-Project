@@ -36,19 +36,19 @@ export async function handleDetail(request, env, slug) {
 }
 
 export async function handleTracking(request, env) {
-  const log   = await getTrackLog(env);
+  const data  = await getTrackLog(env);
   const nonce = generateNonce();
-  return new Response(adminTrackingPage(log, nonce), { headers: htmlHeaders(nonce) });
+  return new Response(adminTrackingPage(data, nonce), { headers: htmlHeaders(nonce) });
 }
 
 export async function handleTrackingKeyseedLogs(request, env) {
-  const log   = await getKeyseedLog(env);
+  const data  = await getKeyseedLog(env);
   const nonce = generateNonce();
-  return new Response(adminKeyseedLogPage(log, nonce), { headers: htmlHeaders(nonce) });
+  return new Response(adminKeyseedLogPage(data, nonce), { headers: htmlHeaders(nonce) });
 }
 
 export async function handleTrackingStats(request, env) {
-  const log   = await getTrackLog(env);
+  const { entries, hasMore } = await getTrackLog(env);
   const nonce = generateNonce();
-  return new Response(adminTrackStatsPage(computeStats(log), nonce), { headers: htmlHeaders(nonce) });
+  return new Response(adminTrackStatsPage(computeStats(entries), nonce, hasMore), { headers: htmlHeaders(nonce) });
 }

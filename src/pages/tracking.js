@@ -13,11 +13,16 @@ function reportTabsHtml(active) {
 </div>`;
 }
 
-export function adminTrackingPage(log, nonce = "") {
-  const totalEvents = log.length;
-  const uniqueGames = new Set(log.map(e => e.game)).size;
+// data = { entries, hasMore } — entries already arrive newest-first
+// straight from KV (see reverseTsKey in handlers/tracking.js), so no
+// .reverse() here. hasMore is Cloudflare's own list_complete signal:
+// true means there are older events beyond this page, not an exact count.
+export function adminTrackingPage(data, nonce = "") {
+  const { entries, hasMore } = data;
+  const totalLabel  = hasMore ? `${entries.length}+` : String(entries.length);
+  const uniqueGames = new Set(entries.map(e => e.game)).size;
 
-  const rows = log.slice().reverse().slice(0, 500).map(e => {
+  const rows = entries.map(e => {
     const ts = new Date(e.ts).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium" });
     return `<tr>
       <td>${escHtml(ts)}</td>
@@ -41,10 +46,10 @@ ${sidebarHtml("tracking")}
   <main>
     ${reportTabsHtml("track")}
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">${totalEvents}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">${totalLabel}</div></div>
       <div class="stat-card"><div class="stat-label">Unique Games</div><div class="stat-value">${uniqueGames}</div></div>
     </div>
-    <div class="section-title">Recent Tracking Events${log.length > 500 ? ` (showing latest 500 of ${log.length})` : ""}</div>
+    <div class="section-title">Recent Tracking Events${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</div>
     <div class="track-table-wrap">
       <table class="track-table">
         <thead>
@@ -59,11 +64,12 @@ ${sidebarHtml("tracking")}
   return htmlShell("Tracking", body, false, nonce);
 }
 
-export function adminKeyseedLogPage(log, nonce = "") {
-  const total = log.length;
-  const okCount           = log.filter(e => e.status === "OK").length;
-  const unauthorizedCount = log.filter(e => e.status === "UNAUTHORIZED").length;
-  const rateLimitedCount  = log.filter(e => e.status === "RATE_LIMITED").length;
+export function adminKeyseedLogPage(data, nonce = "") {
+  const { entries, hasMore } = data;
+  const totalLabel        = hasMore ? `${entries.length}+` : String(entries.length);
+  const okCount           = entries.filter(e => e.status === "OK").length;
+  const unauthorizedCount = entries.filter(e => e.status === "UNAUTHORIZED").length;
+  const rateLimitedCount  = entries.filter(e => e.status === "RATE_LIMITED").length;
 
   const statusClass = {
     OK: "status-ok",
@@ -71,7 +77,7 @@ export function adminKeyseedLogPage(log, nonce = "") {
     RATE_LIMITED: "status-warn",
   };
 
-  const rows = log.slice().reverse().slice(0, 500).map(e => {
+  const rows = entries.map(e => {
     const ts = new Date(e.ts).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium" });
     return `<tr>
       <td>${escHtml(ts)}</td>
@@ -91,12 +97,12 @@ ${sidebarHtml("tracking")}
   <main>
     ${reportTabsHtml("keyseed")}
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">Total Requests</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Requests</div><div class="stat-value">${totalLabel}</div></div>
       <div class="stat-card"><div class="stat-label">Authorized</div><div class="stat-value">${okCount}</div></div>
       <div class="stat-card"><div class="stat-label">Unauthorized</div><div class="stat-value">${unauthorizedCount}</div></div>
       <div class="stat-card"><div class="stat-label">Rate Limited</div><div class="stat-value">${rateLimitedCount}</div></div>
     </div>
-    <div class="section-title">Recent Keyseed Access${log.length > 500 ? ` (showing latest 500 of ${log.length})` : ""}</div>
+    <div class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</div>
     <div class="track-table-wrap">
       <table class="track-table">
         <thead>
@@ -111,7 +117,10 @@ ${sidebarHtml("tracking")}
   return htmlShell("Keyseed Logs", body, false, nonce);
 }
 
-export function adminTrackStatsPage(stats, nonce = "") {
+// stats is the array returned by computeStats() — already just the grouped
+// breakdown, not the {entries, hasMore} wrapper, since admin.js unwraps it
+// before calling computeStats().
+export function adminTrackStatsPage(stats, nonce = "", hasMore = false) {
   const totalGames = stats.length;
   const totalUsage = stats.reduce((s, g) => s + g.total_usage, 0);
 
@@ -139,6 +148,7 @@ ${sidebarHtml("tracking")}
   </header>
   <main>
     ${reportTabsHtml("stats")}
+    ${hasMore ? `<div class="alert" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);">Based on the latest tracked events — older history beyond that isn't included in this breakdown.</div>` : ""}
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Games Tracked</div><div class="stat-value">${totalGames}</div></div>
       <div class="stat-card"><div class="stat-label">Total Usage</div><div class="stat-value">${totalUsage}</div></div>

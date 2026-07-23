@@ -1,9 +1,9 @@
 import { safeCompare, getClientIp, checkRateLimit } from "../utils/security.js";
 import { TRACK_RATE_MAX, TRACK_RATE_WINDOW, KEYSEED_RATE_MAX, KEYSEED_RATE_WINDOW, ADMIN_API_RATE_MAX, ADMIN_API_RATE_WINDOW } from "../utils/constants.js";
 
-const TRACK_LOG_KEY   = "cheat_track_log";
-const KEYSEED_LOG_KEY = "keyseed_access_log";
-const LOG_CAP         = 5000;
+const TRACK_PREFIX   = "cheat_track_log:";
+const KEYSEED_PREFIX = "keyseed_access_log:";
+const LIST_LIMIT     = 500;
 
 // Emergency kill-switch: set this KV key (any truthy value) from the
 // Cloudflare dashboard to instantly disable /api/keyseed without waiting
@@ -19,26 +19,52 @@ const GLOBAL_UNAUTH_THRESHOLD  = 15;
 const ALERT_COOLDOWN_KEY       = "keyseed_alert_cooldown";
 const ALERT_COOLDOWN_SECONDS   = 900;  // don't re-alert more than once per 15 min
 
-async function appendLog(env, key, entry) {
-  const log = await env.KV_BINDING.get(key, { type: "json" }) || [];
-  log.push(entry);
-  if (log.length > LOG_CAP) log.splice(0, log.length - LOG_CAP);
-  await env.KV_BINDING.put(key, JSON.stringify(log));
+// ── Key-per-event log storage ─────────────────────────────────
+// Each event gets its own KV key instead of all events sharing one JSON
+// blob. This removes the read-modify-write race that a single shared key
+// had (two requests landing at once could clobber each other's write) and
+// avoids re-reading/re-writing an ever-growing array on every single event.
+//
+// The timestamp portion of the key is inverted (a large constant minus the
+// real timestamp) so that KV's lexicographic key ordering naturally yields
+// newest-first results — list() can hand back the latest N events directly
+// without a full scan or a separate sort step.
+function reverseTsKey(prefix) {
+  const rev    = (9999999999999 - Date.now()).toString().padStart(13, "0");
+  const suffix = crypto.randomUUID().slice(0, 8);
+  return `${prefix}${rev}:${suffix}`;
 }
 
-export async function getTrackLog(env) {
-  return await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
+// The actual entry is stored as KV metadata (not the value) so that list()
+// alone — a single call — returns everything needed to render a page of
+// logs, with no follow-up get() per key.
+async function writeLogEntry(env, prefix, entry) {
+  await env.KV_BINDING.put(reverseTsKey(prefix), "", { metadata: entry });
 }
 
-export async function getKeyseedLog(env) {
-  return await env.KV_BINDING.get(KEYSEED_LOG_KEY, { type: "json" }) || [];
+// Returns { entries, hasMore }. hasMore is Cloudflare's own list_complete
+// flag, not a guess — it tells you plainly whether there are more events
+// beyond the page you got, without needing a full count scan.
+async function readLog(env, prefix, limit = LIST_LIMIT) {
+  const { keys, list_complete } = await env.KV_BINDING.list({ prefix, limit });
+  return { entries: keys.map(k => k.metadata), hasMore: !list_complete };
+}
+
+export async function getTrackLog(env, limit = LIST_LIMIT) {
+  return readLog(env, TRACK_PREFIX, limit);
+}
+
+export async function getKeyseedLog(env, limit = LIST_LIMIT) {
+  return readLog(env, KEYSEED_PREFIX, limit);
 }
 
 // Shared by the /api/stats endpoint (X-Bc-Auth) and the session-authenticated
 // /admin/tracking/stats page — same grouping, two different auth paths.
-export function computeStats(log) {
+// Note: operates on whatever page of entries it's given (latest LIST_LIMIT),
+// not a full historical scan — see readLog() above.
+export function computeStats(entries) {
   const counts = new Map();
-  for (const e of log) {
+  for (const e of entries) {
     const key = `${e.game}||${e.eventid}||${e.renpy_version}||${e.platform}`;
     counts.set(key, (counts.get(key) || 0) + 1);
   }
@@ -117,7 +143,7 @@ export async function handleTrack(request, env, ctx) {
   const entry = { ts: Date.now(), country, region, city, game, eventid, renpy_version: renpyVersion, platform };
 
   const task = (async () => {
-    await appendLog(env, TRACK_LOG_KEY, entry);
+    await writeLogEntry(env, TRACK_PREFIX, entry);
     if (env.GA4_MEASUREMENT_ID && env.GA4_API_SECRET) {
       try {
         await fetch(
@@ -153,13 +179,13 @@ export async function handleKeyseed(request, env, ctx) {
 
   const allowed = await checkRateLimit(env, "rl:keyseed", clientIp, KEYSEED_RATE_MAX, KEYSEED_RATE_WINDOW);
   if (!allowed) {
-    await appendLog(env, KEYSEED_LOG_KEY, { ts: Date.now(), status: "RATE_LIMITED", ip: clientIp, ua: userAgent });
+    await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "RATE_LIMITED", ip: clientIp, ua: userAgent });
     return jsonResponse({ status: "rate_limited" }, 429);
   }
 
   const secret = request.headers.get("X-Bc-Auth") || "";
   if (!await safeCompare(secret, env.SEED_AUTH_KEY || "")) {
-    await appendLog(env, KEYSEED_LOG_KEY, { ts: Date.now(), status: "UNAUTHORIZED", ip: clientIp, ua: userAgent });
+    await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "UNAUTHORIZED", ip: clientIp, ua: userAgent });
     await flagGlobalUnauthorized(env, ctx);
     return jsonResponse({ status: "unauthorized" }, 401);
   }
@@ -168,7 +194,7 @@ export async function handleKeyseed(request, env, ctx) {
     return jsonResponse({ status: "error" }, 500);
   }
 
-  await appendLog(env, KEYSEED_LOG_KEY, { ts: Date.now(), status: "OK", ip: clientIp, ua: userAgent });
+  await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "OK", ip: clientIp, ua: userAgent });
 
   return new Response(env.KEYSEED_RAW, {
     status: 200,
@@ -200,8 +226,8 @@ async function adminApiRateLimited(request, env) {
 export async function handleTrackLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
-  const log = await getTrackLog(env);
-  const lines = log.map(e =>
+  const { entries } = await getTrackLog(env);
+  const lines = entries.map(e =>
     `${new Date(e.ts).toISOString()} | Country: ${e.country} | Region: ${e.region} | City: ${e.city} | Game: ${e.game} | EventID: ${e.eventid} | RenPy: ${e.renpy_version} | Platform: ${e.platform}`
   ).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
@@ -210,14 +236,14 @@ export async function handleTrackLogs(request, env) {
 export async function handleKeyseedLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
-  const log = await getKeyseedLog(env);
-  const lines = log.map(e => `${new Date(e.ts).toISOString()} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
+  const { entries } = await getKeyseedLog(env);
+  const lines = entries.map(e => `${new Date(e.ts).toISOString()} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
 }
 
 export async function handleTrackStats(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
-  const log = await getTrackLog(env);
-  return jsonResponse({ stats: computeStats(log) }, 200);
+  const { entries } = await getTrackLog(env);
+  return jsonResponse({ stats: computeStats(entries) }, 200);
 }
