@@ -159,3 +159,49 @@ if (editBtn) {
     empty.style.display = visible === 0 ? 'block' : 'none';
   });
 })();
+
+// ── Generic table-row search (Tracking / Keyseed Logs) ────────
+// Filters <tr data-search="..."> rows in a <tbody> against an <input>,
+// matching the same instant client-side filtering pattern as the
+// dashboard search above, but for plain table rows instead of dash-row
+// divs. Reused for both the Track Events and Keyseed Logs tabs.
+function wireTableSearch(inputId, tbodyId, emptyText) {
+  const input = document.getElementById(inputId);
+  const tbody = document.getElementById(tbodyId);
+  if (!input || !tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr[data-search]'));
+  if (rows.length === 0) return;
+
+  const colCount = rows[0].children.length;
+  let emptyRow = null;
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    let visible = 0;
+    rows.forEach(row => {
+      const match = !q || row.dataset.search.includes(q);
+      row.hidden = !match;
+      if (match) visible++;
+    });
+
+    if (visible === 0) {
+      if (!emptyRow) {
+        emptyRow = document.createElement('tr');
+        emptyRow.className = 'search-empty-row';
+        const td = document.createElement('td');
+        td.colSpan = colCount;
+        td.className = 'track-table-empty';
+        td.textContent = emptyText;
+        emptyRow.appendChild(td);
+        tbody.appendChild(emptyRow);
+      }
+      emptyRow.hidden = false;
+    } else if (emptyRow) {
+      emptyRow.hidden = true;
+    }
+  });
+}
+
+wireTableSearch('trackSearch', 'trackTableBody', 'No tracking events match your search.');
+wireTableSearch('keyseedSearch', 'keyseedTableBody', 'No keyseed access entries match your search.');

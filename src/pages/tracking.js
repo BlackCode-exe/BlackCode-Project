@@ -24,7 +24,9 @@ export function adminTrackingPage(data, nonce = "") {
 
   const rows = entries.map(e => {
     const ts = new Date(e.ts).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium" });
-    return `<tr>
+    const searchBlob = [e.country, e.region, e.city, e.game, e.eventid, e.renpy_version, e.platform]
+      .join(" ").toLowerCase();
+    return `<tr data-search="${escHtml(searchBlob)}">
       <td>${escHtml(ts)}</td>
       <td>${escHtml(e.country || "-")}</td>
       <td>${escHtml(e.region || "-")}</td>
@@ -50,12 +52,15 @@ ${sidebarHtml("tracking")}
       <div class="stat-card"><div class="stat-label">Unique Games</div><div class="stat-value">${uniqueGames}</div></div>
     </div>
     <div class="section-title">Recent Tracking Events${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</div>
+    <div class="dash-search-wrap" style="margin-bottom:16px;">
+      <input type="text" id="trackSearch" class="dash-search" placeholder="Search by game, event, country, Ren'Py version, platform...">
+    </div>
     <div class="track-table-wrap">
-      <table class="track-table">
+      <table class="track-table" id="trackTable">
         <thead>
           <tr><th>Time</th><th>Country</th><th>Region</th><th>City</th><th>Game</th><th>Event ID</th><th>Ren'Py</th><th>Platform</th></tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="8" class="track-table-empty">No tracking events yet.</td></tr>`}</tbody>
+        <tbody id="trackTableBody">${rows || `<tr><td colspan="8" class="track-table-empty">No tracking events yet.</td></tr>`}</tbody>
       </table>
     </div>
   </main>
@@ -79,7 +84,8 @@ export function adminKeyseedLogPage(data, nonce = "") {
 
   const rows = entries.map(e => {
     const ts = new Date(e.ts).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium" });
-    return `<tr>
+    const searchBlob = [e.status, e.ip, e.ua].join(" ").toLowerCase();
+    return `<tr data-search="${escHtml(searchBlob)}">
       <td>${escHtml(ts)}</td>
       <td><span class="status-badge ${statusClass[e.status] || ""}">${escHtml(e.status || "-")}</span></td>
       <td>${escHtml(e.ip || "-")}</td>
@@ -103,12 +109,15 @@ ${sidebarHtml("tracking")}
       <div class="stat-card"><div class="stat-label">Rate Limited</div><div class="stat-value">${rateLimitedCount}</div></div>
     </div>
     <div class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</div>
+    <div class="dash-search-wrap" style="margin-bottom:16px;">
+      <input type="text" id="keyseedSearch" class="dash-search" placeholder="Search by status, IP, or user agent...">
+    </div>
     <div class="track-table-wrap">
-      <table class="track-table">
+      <table class="track-table" id="keyseedTable">
         <thead>
           <tr><th>Time</th><th>Status</th><th>IP</th><th>User Agent</th></tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="4" class="track-table-empty">No keyseed access attempts yet.</td></tr>`}</tbody>
+        <tbody id="keyseedTableBody">${rows || `<tr><td colspan="4" class="track-table-empty">No keyseed access attempts yet.</td></tr>`}</tbody>
       </table>
     </div>
   </main>
