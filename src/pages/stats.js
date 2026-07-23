@@ -11,8 +11,12 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
     ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Create Link tab.</div>`
     : links.map(l => {
         const fullUrl = `https://${host}/${escHtml(l.slug)}`;
-        const date    = l.created ? new Date(l.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
         const title   = l.title || l.slug;
+        // data-date hydrated client-side (see main.js) so it always shows
+        // in the viewer's own current timezone, not one baked in server-side.
+        const dateCell = l.created
+          ? `<span data-date="${new Date(l.created).getTime()}">${escHtml(new Date(l.created).toISOString().slice(0, 10))}</span>`
+          : `<span>-</span>`;
         return `
         <div class="link-card">
           <div class="link-card-top">
@@ -40,7 +44,7 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
           </div>
           <div class="link-card-footer">
             <span class="link-card-clicks">Total Clicks: <strong>${l.clicks || 0}</strong></span>
-            <span class="link-card-date">${date}</span>
+            <span class="link-card-date">${dateCell}</span>
           </div>
         </div>`;
       }).join("");

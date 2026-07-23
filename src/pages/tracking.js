@@ -1,33 +1,40 @@
 import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 
-function reportTabsHtml(active) {
+function subnavHtml(active) {
   const tabs = [
     { id: "track",   label: "Track Events",  href: "/admin/tracking" },
     { id: "keyseed", label: "Keyseed Logs",   href: "/admin/tracking/keyseed" },
     { id: "stats",   label: "Stats",          href: "/admin/tracking/stats" },
   ];
   return `
-<div class="report-tabs">
-  ${tabs.map(t => `<a href="${t.href}" class="report-tab${active === t.id ? " active" : ""}">${t.label}</a>`).join("")}
-</div>`;
+<nav class="subnav">
+  <div class="subnav-inner">
+    ${tabs.map(t => `<a href="${t.href}" class="subnav-tab${active === t.id ? " active" : ""}">${t.label}</a>`).join("")}
+  </div>
+</nav>`;
 }
 
 // data = { entries, hasMore } — entries already arrive newest-first
 // straight from KV (see reverseTsKey in handlers/tracking.js), so no
 // .reverse() here. hasMore is Cloudflare's own list_complete signal:
 // true means there are older events beyond this page, not an exact count.
+//
+// Timestamps render as data-ts="<epoch ms>" with an ISO fallback as the
+// initial text — main.js hydrates them into the viewer's own local time
+// on load (see formatDateTime()), so the displayed time always matches
+// whatever timezone the admin's device is currently in, not a timezone
+// baked in server-side.
 export function adminTrackingPage(data, nonce = "") {
   const { entries, hasMore } = data;
   const totalLabel  = hasMore ? `${entries.length}+` : String(entries.length);
   const uniqueGames = new Set(entries.map(e => e.game)).size;
 
   const rows = entries.map(e => {
-    const ts = new Date(e.ts).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium" });
     const searchBlob = [e.country, e.region, e.city, e.game, e.eventid, e.renpy_version, e.platform]
       .join(" ").toLowerCase();
     return `<tr data-search="${escHtml(searchBlob)}">
-      <td>${escHtml(ts)}</td>
+      <td data-ts="${e.ts}">${escHtml(new Date(e.ts).toISOString())}</td>
       <td>${escHtml(e.country || "-")}</td>
       <td>${escHtml(e.region || "-")}</td>
       <td>${escHtml(e.city || "-")}</td>
@@ -45,8 +52,8 @@ ${sidebarHtml("tracking")}
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
   </header>
+  ${subnavHtml("track")}
   <main>
-    ${reportTabsHtml("track")}
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">${totalLabel}</div></div>
       <div class="stat-card"><div class="stat-label">Unique Games</div><div class="stat-value">${uniqueGames}</div></div>
@@ -83,10 +90,9 @@ export function adminKeyseedLogPage(data, nonce = "") {
   };
 
   const rows = entries.map(e => {
-    const ts = new Date(e.ts).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium" });
     const searchBlob = [e.status, e.ip, e.ua].join(" ").toLowerCase();
     return `<tr data-search="${escHtml(searchBlob)}">
-      <td>${escHtml(ts)}</td>
+      <td data-ts="${e.ts}">${escHtml(new Date(e.ts).toISOString())}</td>
       <td><span class="status-badge ${statusClass[e.status] || ""}">${escHtml(e.status || "-")}</span></td>
       <td>${escHtml(e.ip || "-")}</td>
       <td class="track-table-ua">${escHtml(e.ua || "-")}</td>
@@ -100,8 +106,8 @@ ${sidebarHtml("tracking")}
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
   </header>
+  ${subnavHtml("keyseed")}
   <main>
-    ${reportTabsHtml("keyseed")}
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Total Requests</div><div class="stat-value">${totalLabel}</div></div>
       <div class="stat-card"><div class="stat-label">Authorized</div><div class="stat-value">${okCount}</div></div>
@@ -155,8 +161,8 @@ ${sidebarHtml("tracking")}
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
   </header>
+  ${subnavHtml("stats")}
   <main>
-    ${reportTabsHtml("stats")}
     ${hasMore ? `<div class="alert" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);">Based on the latest tracked events — older history beyond that isn't included in this breakdown.</div>` : ""}
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Games Tracked</div><div class="stat-value">${totalGames}</div></div>

@@ -205,3 +205,46 @@ function wireTableSearch(inputId, tbodyId, emptyText) {
 
 wireTableSearch('trackSearch', 'trackTableBody', 'No tracking events match your search.');
 wireTableSearch('keyseedSearch', 'keyseedTableBody', 'No keyseed access entries match your search.');
+
+// ── Timezone-aware timestamp hydration ────────────────────────
+// Server renders raw epoch ms in data-ts / data-date attributes (with a
+// plain ISO string as a no-JS fallback). This formats them using the
+// viewer's OWN device/browser local time — via Date's local getters,
+// which read whatever timezone the device is currently set to — so the
+// displayed time always matches wherever the admin actually is right now
+// (Jakarta, Dubai, wherever), rather than a timezone hardcoded server-side.
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+                      "July", "August", "September", "October", "November", "December"];
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+// Full "Month dd, yyyy hh:mm:ss AM/PM" in the browser's local time.
+function formatDateTime(ms) {
+  const d = new Date(ms);
+  let hours = d.getHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} `
+       + `${pad2(hours)}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())} ${ampm}`;
+}
+
+// Date-only "Month dd, yyyy" in the browser's local time (used where only
+// a day matters, e.g. a link's "Created" date).
+function formatDateOnly(ms) {
+  const d = new Date(ms);
+  return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+document.querySelectorAll('[data-ts]').forEach(el => {
+  const ms = Number(el.dataset.ts);
+  if (!Number.isNaN(ms)) el.textContent = formatDateTime(ms);
+});
+
+document.querySelectorAll('[data-date]').forEach(el => {
+  const ms = Number(el.dataset.date);
+  if (!Number.isNaN(ms)) el.textContent = formatDateOnly(ms);
+});
