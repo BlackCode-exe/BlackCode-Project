@@ -30,6 +30,32 @@ export async function getTrackLog(env) {
   return await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
 }
 
+export async function getKeyseedLog(env) {
+  return await env.KV_BINDING.get(KEYSEED_LOG_KEY, { type: "json" }) || [];
+}
+
+// Shared by the /api/stats endpoint (X-Bc-Auth) and the session-authenticated
+// /admin/tracking/stats page — same grouping, two different auth paths.
+export function computeStats(log) {
+  const counts = new Map();
+  for (const e of log) {
+    const key = `${e.game}||${e.eventid}||${e.renpy_version}||${e.platform}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const grouped = {};
+  for (const [key, count] of counts) {
+    const [game, eventid, renpy_version, platform] = key.split("||");
+    (grouped[game] ||= []).push({ eventid, renpy_version, platform, usage_count: count });
+  }
+  return Object.entries(grouped)
+    .map(([game, events]) => ({
+      game,
+      events: events.sort((a, b) => b.usage_count - a.usage_count),
+      total_usage: events.reduce((s, e) => s + e.usage_count, 0),
+    }))
+    .sort((a, b) => b.total_usage - a.total_usage);
+}
+
 function jsonResponse(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -174,7 +200,7 @@ async function adminApiRateLimited(request, env) {
 export async function handleTrackLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
-  const log = await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
+  const log = await getTrackLog(env);
   const lines = log.map(e =>
     `${new Date(e.ts).toISOString()} | Country: ${e.country} | Region: ${e.region} | City: ${e.city} | Game: ${e.game} | EventID: ${e.eventid} | RenPy: ${e.renpy_version} | Platform: ${e.platform}`
   ).join("\n");
@@ -184,7 +210,7 @@ export async function handleTrackLogs(request, env) {
 export async function handleKeyseedLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
-  const log = await env.KV_BINDING.get(KEYSEED_LOG_KEY, { type: "json" }) || [];
+  const log = await getKeyseedLog(env);
   const lines = log.map(e => `${new Date(e.ts).toISOString()} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
 }
@@ -192,25 +218,6 @@ export async function handleKeyseedLogs(request, env) {
 export async function handleTrackStats(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
-  const log = await env.KV_BINDING.get(TRACK_LOG_KEY, { type: "json" }) || [];
-
-  const counts = new Map();
-  for (const e of log) {
-    const key = `${e.game}||${e.eventid}||${e.renpy_version}||${e.platform}`;
-    counts.set(key, (counts.get(key) || 0) + 1);
-  }
-  const grouped = {};
-  for (const [key, count] of counts) {
-    const [game, eventid, renpy_version, platform] = key.split("||");
-    (grouped[game] ||= []).push({ eventid, renpy_version, platform, usage_count: count });
-  }
-  const result = Object.entries(grouped)
-    .map(([game, events]) => ({
-      game,
-      events: events.sort((a, b) => b.usage_count - a.usage_count),
-      total_usage: events.reduce((s, e) => s + e.usage_count, 0),
-    }))
-    .sort((a, b) => b.total_usage - a.total_usage);
-
-  return jsonResponse({ stats: result }, 200);
+  const log = await getTrackLog(env);
+  return jsonResponse({ stats: computeStats(log) }, 200);
 }

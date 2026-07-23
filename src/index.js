@@ -2,7 +2,7 @@ import { makeSecurityHeaders, htmlHeaders, redirect, isAuthenticated } from "./u
 import { ASSET_VERSION } from "./utils/asset-version.js";
 import { getLink, recordClick } from "./utils/kv.js";
 import { handleLogin, handleLogout } from "./handlers/auth.js";
-import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking } from "./handlers/admin.js";
+import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking, handleTrackingKeyseedLogs, handleTrackingStats } from "./handlers/admin.js";
 import { handleCreate, handleEdit, handleDelete } from "./handlers/links.js";
 import { handleTrack, handleKeyseed, handleTrackLogs, handleKeyseedLogs, handleTrackStats } from "./handlers/tracking.js";
 
@@ -50,13 +50,15 @@ export default {
     if (pathname.startsWith("/admin")) {
       if (!await isAuthenticated(request, env)) return redirect("/admin/login");
 
-      if (pathname === "/admin" && method === "GET")           return handleDashboard(request, env);
-      if (pathname === "/admin/add" && method === "GET")       return handleAdd(request, env);
-      if (pathname === "/admin/create" && method === "POST")   return handleCreate(request, env);
-      if (pathname === "/admin/edit" && method === "POST")     return handleEdit(request, env);
-      if (pathname === "/admin/delete" && method === "POST")   return handleDelete(request, env);
-      if (pathname === "/admin/stats" && method === "GET")     return handleStats(request, env);
-      if (pathname === "/admin/tracking" && method === "GET")  return handleTracking(request, env);
+      if (pathname === "/admin" && method === "GET")                    return handleDashboard(request, env);
+      if (pathname === "/admin/add" && method === "GET")                return handleAdd(request, env);
+      if (pathname === "/admin/create" && method === "POST")            return handleCreate(request, env);
+      if (pathname === "/admin/edit" && method === "POST")              return handleEdit(request, env);
+      if (pathname === "/admin/delete" && method === "POST")            return handleDelete(request, env);
+      if (pathname === "/admin/stats" && method === "GET")              return handleStats(request, env);
+      if (pathname === "/admin/tracking" && method === "GET")           return handleTracking(request, env);
+      if (pathname === "/admin/tracking/keyseed" && method === "GET")   return handleTrackingKeyseedLogs(request, env);
+      if (pathname === "/admin/tracking/stats" && method === "GET")     return handleTrackingStats(request, env);
 
       const detailMatch = pathname.match(/^\/admin\/link\/(.+)$/);
       if (detailMatch && method === "GET") return handleDetail(request, env, detailMatch[1]);

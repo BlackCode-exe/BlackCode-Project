@@ -454,3 +454,20 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .track-table tr:last-child td { border-bottom:none; }
 .track-table tr:hover td { background:var(--surface2); }
 .track-table-empty { color:var(--muted); text-align:center; padding:24px !important; }
+
+/* ── Report tabs (Tracking / Keyseed Logs / Stats) ── */
+.report-tabs { display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
+.report-tab {
+  padding:8px 16px; border-radius:var(--radius); border:1px solid var(--border);
+  color:var(--muted); font-weight:700; font-size:12px; letter-spacing:0.06em;
+  text-transform:uppercase; text-decoration:none; transition:color 0.15s, border-color 0.15s, background 0.15s;
+}
+.report-tab:hover { color:var(--text); border-color:var(--text); }
+.report-tab.active { color:#000; background:var(--accent); border-color:var(--accent); }
+
+/* ── Status badges (Keyseed Logs) ── */
+.status-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.04em; }
+.status-ok { background:#0d2a0d; color:var(--success); border:1px solid #1a5c1a; }
+.status-danger { background:#2a0d0d; color:var(--danger); border:1px solid #5c1a1a; }
+.status-warn { background:#2a2410; color:#e8c700; border:1px solid #5c4f1a; }
+.track-table-ua { color:var(--muted); font-size:11px; }
