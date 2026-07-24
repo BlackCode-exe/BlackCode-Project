@@ -32,6 +32,12 @@ export default {
       const assetResp  = await env.ASSETS.fetch(request);
       const newHeaders = new Headers(assetResp.headers);
       Object.entries(makeSecurityHeaders()).forEach(([k, v]) => newHeaders.set(k, v));
+      // Explicit Cache-Control, set by the Worker rather than left to
+      // whatever the Assets binding returns by default. Every asset URL is
+      // already suffixed with ?v=ASSET_VERSION (see gen-asset-version.js),
+      // so a long max-age here is safe: a new deploy changes the version
+      // string, which changes the URL, which is a new cache key.
+      newHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
       return new Response(assetResp.body, { status: assetResp.status, headers: newHeaders });
     }
 
@@ -43,7 +49,7 @@ export default {
     if (pathname === "/api/stats" && method === "GET")         return handleTrackStats(request, env);
 
     // ── Auth routes ───────────────────────────────────────────
-    if (pathname === "/admin/login")  return handleLogin(request, env);
+    if (pathname === "/admin/login")  return handleLogin(request, env, ctx);
     if (pathname === "/admin/logout") return handleLogout(request, env);
 
     // ── Admin area (auth guard) ───────────────────────────────

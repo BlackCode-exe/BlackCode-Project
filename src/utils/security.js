@@ -1,4 +1,5 @@
 import { COOKIE_NAME, COOKIE_TTL, SESSION_TTL, MAX_ATTEMPTS, LOCKOUT_TTL } from "./constants.js";
+import { LOGIN_GLOBAL_UNAUTH_WINDOW, LOGIN_GLOBAL_UNAUTH_THRESHOLD, LOGIN_ALERT_COOLDOWN_SECONDS } from "./constants.js";
 
 // ── Security Headers ──────────────────────────────────────────
 
@@ -117,6 +118,43 @@ export async function checkRateLimit(env, keyPrefix, ip, max, windowSeconds) {
   }
   await env.KV_BINDING.put(key, JSON.stringify({ windowStart: now, count: 1 }), { expirationTtl: windowSeconds });
   return true;
+}
+
+// ── Cross-IP login brute-force detection ──────────────────────
+// Per-IP lockout (isRateLimited/recordFailedAttempt above) stops one IP at a
+// time. This catches a distributed attempt — many IPs each staying under
+// the per-IP threshold while collectively hammering ADMIN_PASSWORD — the
+// same class of attack the existing keyseed detector (tracking.js) already
+// covers for /api/keyseed. Separate KV keys so this never touches that
+// endpoint's counters or cooldown.
+const LOGIN_GLOBAL_UNAUTH_KEY  = "login_global_unauthorized";
+const LOGIN_ALERT_COOLDOWN_KEY = "login_alert_cooldown";
+
+export async function flagGlobalLoginUnauthorized(env, ctx) {
+  const now  = Date.now();
+  const data = await env.KV_BINDING.get(LOGIN_GLOBAL_UNAUTH_KEY, { type: "json" });
+  let count  = 1;
+  if (data && now - data.windowStart < LOGIN_GLOBAL_UNAUTH_WINDOW * 1000) {
+    count = data.count + 1;
+    await env.KV_BINDING.put(LOGIN_GLOBAL_UNAUTH_KEY, JSON.stringify({ windowStart: data.windowStart, count }), { expirationTtl: LOGIN_GLOBAL_UNAUTH_WINDOW });
+  } else {
+    await env.KV_BINDING.put(LOGIN_GLOBAL_UNAUTH_KEY, JSON.stringify({ windowStart: now, count: 1 }), { expirationTtl: LOGIN_GLOBAL_UNAUTH_WINDOW });
+  }
+
+  if (count >= LOGIN_GLOBAL_UNAUTH_THRESHOLD && env.DISCORD_ALERT_WEBHOOK) {
+    const cooldown = await env.KV_BINDING.get(LOGIN_ALERT_COOLDOWN_KEY);
+    if (!cooldown) {
+      await env.KV_BINDING.put(LOGIN_ALERT_COOLDOWN_KEY, "1", { expirationTtl: LOGIN_ALERT_COOLDOWN_SECONDS });
+      const alert = fetch(env.DISCORD_ALERT_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `🚨 **/admin/login**: ${count} failed password attempts in the last ${LOGIN_GLOBAL_UNAUTH_WINDOW / 60} minutes across possibly multiple IPs. Could be a distributed brute-force against ADMIN_PASSWORD (each IP staying under the per-IP lockout threshold). Consider rotating ADMIN_PASSWORD if this keeps firing.`,
+        }),
+      }).catch(() => {});
+      if (ctx) ctx.waitUntil(alert);
+    }
+  }
 }
 
 // ── Session ───────────────────────────────────────────────────

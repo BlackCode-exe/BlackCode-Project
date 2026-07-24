@@ -1,10 +1,10 @@
 import { htmlHeaders, makeSecurityHeaders, redirect, setCookie, generateNonce } from "../utils/security.js";
 import { safeCompare, getClientIp, isRateLimited, recordFailedAttempt, clearRateLimit, createSession, destroySession } from "../utils/security.js";
-import { generateToken, setLoginCsrfCookie, validateLoginCsrf } from "../utils/security.js";
+import { generateToken, setLoginCsrfCookie, validateLoginCsrf, flagGlobalLoginUnauthorized } from "../utils/security.js";
 import { COOKIE_TTL } from "../utils/constants.js";
 import { loginPage } from "../pages/login.js";
 
-export async function handleLogin(request, env) {
+export async function handleLogin(request, env, ctx) {
   if (request.method === "POST") {
     const ip = getClientIp(request);
     if (await isRateLimited(env, ip)) {
@@ -37,6 +37,10 @@ export async function handleLogin(request, env) {
       });
     }
     await recordFailedAttempt(env, ip);
+    // Cross-IP brute-force detection: this counts wrong-password attempts
+    // globally (not per-IP), so a distributed attempt spread across many
+    // IPs — each staying under its own per-IP lockout — still gets flagged.
+    await flagGlobalLoginUnauthorized(env, ctx);
     const nonce = generateNonce();
     const csrfToken = generateToken();
     return new Response(loginPage(true, false, nonce, csrfToken), {

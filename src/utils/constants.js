@@ -21,3 +21,12 @@ export const KEYSEED_RATE_WINDOW = 60;
 // brute force to a crawl.
 export const ADMIN_API_RATE_MAX    = 15;
 export const ADMIN_API_RATE_WINDOW = 60;
+
+// Cross-IP brute-force detection for /admin/login. Per-IP lockout
+// (MAX_ATTEMPTS/LOCKOUT_TTL above) only stops one IP at a time; this catches
+// a distributed attempt (rotating proxies/botnet) each staying under the
+// per-IP threshold while collectively hammering ADMIN_PASSWORD. Same shape
+// as the existing keyseed global-unauthorized detector in tracking.js.
+export const LOGIN_GLOBAL_UNAUTH_WINDOW    = 300;  // 5 minutes
+export const LOGIN_GLOBAL_UNAUTH_THRESHOLD = 15;
+export const LOGIN_ALERT_COOLDOWN_SECONDS  = 900;  // don't re-alert more than once per 15 min
