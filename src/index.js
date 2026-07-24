@@ -69,14 +69,14 @@ export default {
     // ── Root page ─────────────────────────────────────────────
     const slug = pathname.slice(1);
     if (!slug) {
-      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="root-page"><img src="/BlackCode-Logo.png" alt="BlackCode"></body></html>`;
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${ASSET_VERSION}"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="root-page"><img src="/BlackCode-Logo.png?v=${ASSET_VERSION}" alt="BlackCode"></body></html>`;
       return new Response(html, { headers: htmlHeaders() });
     }
 
     // ── Short link redirect ───────────────────────────────────
     const data = await getLink(env, slug);
     if (!data) {
-      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
+      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${ASSET_VERSION}"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
       return new Response(notFound, { status: 404, headers: htmlHeaders() });
     }
 

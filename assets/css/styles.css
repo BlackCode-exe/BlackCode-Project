@@ -465,10 +465,7 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .track-table tr:hover td { background:var(--surface2); }
 .track-table-empty { color:var(--muted); text-align:center; padding:24px !important; }
 
-/* ── Sub-navbar (Track Events / Keyseed Logs / Stats tabs) ──
-   Sits as its own full-width bar directly below the header, distinct
-   from the centered `main` content column — not floating inside the
-   page content like before. */
+/* ── Sub-navbar (Track Events / Keyseed Logs / Stats tabs) ── */
 .subnav {
   border-bottom:1px solid var(--border);
   background:var(--bg);

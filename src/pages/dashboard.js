@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
+import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 
 export function adminLinksPage(links, request, flashMsg = "", csrf = "", nonce = "") {
@@ -38,7 +38,7 @@ ${sidebarHtml("links")}
     <div class="section-title">Recent Links</div>
     <div class="dash-list" id="dashList">${recentRows}</div>
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>`;
 
   return htmlShell("Dashboard", body, false, nonce);

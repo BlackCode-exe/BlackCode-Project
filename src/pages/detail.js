@@ -1,11 +1,15 @@
-import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
+import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
 
 export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
-  const created  = data.created ? new Date(data.created).toLocaleDateString("en-US", { day:"numeric", month:"long", year:"numeric" }) : "-";
+  // data-date hydrated client-side (see main.js) so it always shows in the
+  // viewer's own current timezone, not one baked in server-side.
+  const createdCell = data.created
+    ? `<span data-date="${new Date(data.created).getTime()}">${escHtml(new Date(data.created).toISOString().slice(0, 10))}</span>`
+    : `<span>-</span>`;
   const targetShort = data.target.length > 40 ? data.target.slice(0, 37) + "..." : data.target;
   const total    = data.clicks || 0;
   const linkTitle = data.title || slug;
@@ -143,7 +147,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
         <span class="detail-target-arrow">↳</span>
         <span class="detail-target-url" title="${escHtml(data.target)}">${escHtml(targetShort)}</span>
       </div>
-      <div class="detail-created">${created}</div>
+      <div class="detail-created">${createdCell}</div>
     </div>
 
     <div class="num-row">
@@ -179,7 +183,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
       <div class="breakdown-list">${refRows}</div>
     </div>
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>
 ${sidebarHtml("")}
 ${editModal}

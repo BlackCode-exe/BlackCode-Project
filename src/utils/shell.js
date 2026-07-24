@@ -31,6 +31,17 @@ export function hamburgerBtn() {
 </button>`;
 }
 
+// Shared footer used by every admin page. logo.png is versioned the same
+// way styles.css/main.js already are (?v=ASSET_VERSION) — without this,
+// Cloudflare's workers.dev edge cache can serve a HIT on the plain
+// unversioned URL indefinitely, bypassing the Worker (and its security
+// header injection) entirely. Bumping ASSET_VERSION on deploy forces a
+// brand-new cache key, guaranteeing a fresh fetch through the Worker.
+export function footerHtml(style = "") {
+  const styleAttr = style ? ` style="${style}"` : "";
+  return `<footer${styleAttr}><img src="/logo.png?v=${ASSET_VERSION}" alt="Logo"></footer>`;
+}
+
 export function htmlShell(title, bodyContent, withCharts = false, nonce = "", withQR = false) {
   const n = nonce ? ` nonce="${nonce}"` : "";
   return `<!DOCTYPE html>
@@ -40,7 +51,7 @@ export function htmlShell(title, bodyContent, withCharts = false, nonce = "", wi
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
   <title>${title} — BlackCode Project</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=${ASSET_VERSION}">
   <link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}">
 </head>
 <body>

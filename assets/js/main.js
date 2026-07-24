@@ -161,10 +161,6 @@ if (editBtn) {
 })();
 
 // ── Generic table-row search (Tracking / Keyseed Logs) ────────
-// Filters <tr data-search="..."> rows in a <tbody> against an <input>,
-// matching the same instant client-side filtering pattern as the
-// dashboard search above, but for plain table rows instead of dash-row
-// divs. Reused for both the Track Events and Keyseed Logs tabs.
 function wireTableSearch(inputId, tbodyId, emptyText) {
   const input = document.getElementById(inputId);
   const tbody = document.getElementById(tbodyId);

@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
+import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
 
 export function adminAddPage(flashMsg = "", csrf = "", nonce = "") {
   const body = `
@@ -29,7 +29,7 @@ ${sidebarHtml("add")}
       <button type="submit" class="btn btn-primary">Create Link</button>
     </form>
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>`;
   return htmlShell("Create Link", body, false, nonce);
 }

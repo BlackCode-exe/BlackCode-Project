@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
+import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
 
@@ -91,7 +91,7 @@ ${sidebarHtml("stats")}
     <div class="section-title">All Links</div>
     <div class="link-list">${cards}</div>
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>
 ${editModal}`;
   return htmlShell("Stats", body, false, nonce);

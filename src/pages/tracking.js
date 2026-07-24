@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn } from "../utils/shell.js";
+import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 
 function subnavHtml(active) {
@@ -71,7 +71,7 @@ ${sidebarHtml("tracking")}
       </table>
     </div>
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>`;
   return htmlShell("Tracking", body, false, nonce);
 }
@@ -127,7 +127,7 @@ ${sidebarHtml("tracking")}
       </table>
     </div>
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>`;
   return htmlShell("Keyseed Logs", body, false, nonce);
 }
@@ -170,7 +170,7 @@ ${sidebarHtml("tracking")}
     </div>
     ${blocks || `<div class="empty-state"><strong>No stats yet.</strong>Tracking events will appear here once cheat mods report usage.</div>`}
   </main>
-  <footer><img src="/logo.png" alt="Logo"></footer>
+  ${footerHtml()}
 </div>`;
   return htmlShell("Stats", body, false, nonce);
 }
