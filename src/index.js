@@ -15,7 +15,11 @@ export default {
     // ── robots.txt ───────────────────────────────────────────
     if (pathname === "/robots.txt") {
       return new Response("User-agent: *\nDisallow: /\n", {
-        headers: { "Content-Type": "text/plain", ...makeSecurityHeaders() },
+        headers: {
+          "Content-Type": "text/plain",
+          "Cache-Control": "public, max-age=3600",
+          ...makeSecurityHeaders(),
+        },
       });
     }
 
