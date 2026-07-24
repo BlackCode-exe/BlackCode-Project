@@ -65,6 +65,7 @@ export function generateToken() {
 // ── Timing-safe compare ───────────────────────────────────────
 
 export async function safeCompare(a, b) {
+  if (!a || !b) return false;
   const enc = new TextEncoder();
   const ka   = await crypto.subtle.importKey("raw", enc.encode(a), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const kb   = await crypto.subtle.importKey("raw", enc.encode(b), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
