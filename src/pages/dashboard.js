@@ -3,9 +3,6 @@ import { escHtml } from "../utils/helpers.js";
 import { ICON_ADD, ICON_STATS, ICON_ACTIVITY } from "../utils/icons.js";
 
 export function adminLinksPage(links, recentEvents, request, flashMsg = "", nonce = "") {
-  const totalLinks  = links.length;
-  const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
-
   // "Based on click activity" — most recently clicked first, not most
   // recently created. A link with zero clicks (lastClick = 0) sorts last.
   const recentLinks = [...links]
@@ -45,11 +42,6 @@ ${sidebarHtml("links")}
   <main>
     ${flashMsg}
     <div class="dash-welcome">Welcome back, <span>Black</span>!</div>
-
-    <div class="dash-summary">
-      <div class="dash-stat"><span class="dash-stat-label">Total Links</span><span class="dash-stat-value">${totalLinks}</span></div>
-      <div class="dash-stat"><span class="dash-stat-label">Total Clicks</span><span class="dash-stat-value">${totalClicks}</span></div>
-    </div>
 
     <div class="section-title">Quick Menu</div>
     <div class="quick-menu">
