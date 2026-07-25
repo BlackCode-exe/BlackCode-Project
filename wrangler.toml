@@ -8,16 +8,6 @@ enabled = true
 [assets]
 directory = "./assets"
 binding = "ASSETS"
-# Was previously an array of specific path patterns. Switched to a bare
-# `true` because HSTS / X-Content-Type-Options were still missing on some
-# asset responses and cf-cache-status kept showing HIT even against
-# cache-busted query strings — meaning some asset requests were still
-# bypassing the Worker's fetch handler entirely (where the security headers
-# get injected). `true` forces every request, including static assets,
-# through the Worker first, removing any ambiguity in glob-pattern matching.
-# NOTE: not verified against a live deploy — could not reach the network to
-# test this session. Re-check response headers on /favicon.ico, /css/*, etc.
-# after the next deploy.
 run_worker_first = true
 
 [[kv_namespaces]]
