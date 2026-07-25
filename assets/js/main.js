@@ -82,14 +82,12 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
 // ── Dropdown menu ("...") ─────────────────────────────────────
 
 (function () {
-  // Toggle dropdown on "..." button click
   document.querySelectorAll('.link-card-menu-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const slug     = btn.dataset.menu;
       const dropdown = document.getElementById('menu-' + slug);
       if (!dropdown) return;
-      // Close all other dropdowns first
       document.querySelectorAll('.link-card-dropdown.open').forEach(d => {
         if (d !== dropdown) d.classList.remove('open');
       });
@@ -97,7 +95,6 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
     });
   });
 
-  // Close dropdown on outside click
   document.addEventListener('click', () => {
     document.querySelectorAll('.link-card-dropdown.open').forEach(d => {
       d.classList.remove('open');
@@ -148,7 +145,6 @@ if (editBtn) {
       row.hidden = !match;
       if (match) visible++;
     });
-    // Show/hide empty state
     let empty = list.querySelector('.dash-empty');
     if (!empty) {
       empty = document.createElement('div');
@@ -160,7 +156,7 @@ if (editBtn) {
   });
 })();
 
-// ── Generic table-row search (Tracking / Keyseed Logs) ────────
+// ── Generic table-row search ────────────────────────────────
 function wireTableSearch(inputId, tbodyId, emptyText) {
   const input = document.getElementById(inputId);
   const tbody = document.getElementById(tbodyId);
@@ -202,8 +198,7 @@ function wireTableSearch(inputId, tbodyId, emptyText) {
 wireTableSearch('trackSearch', 'trackTableBody', 'No tracking events match your search.');
 wireTableSearch('keyseedSearch', 'keyseedTableBody', 'No keyseed access entries match your search.');
 
-// ── Timezone-aware timestamp hydration ────────────────────────
-// Server renders raw epoch ms in data-ts / data-date attributes (with a plain ISO string as a no-JS fallback).
+// ── Timezone-aware ────────────────────────────────────────
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"];
