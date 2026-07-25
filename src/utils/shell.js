@@ -1,5 +1,5 @@
 import { ICON_HOME, ICON_ADD, ICON_STATS, ICON_LOGOUT, ICON_ACTIVITY } from "./icons.js";
-import { ASSET_VERSION } from "./asset-version.js";
+import { assetVersion } from "./asset-version.js";
 
 export function sidebarHtml(active) {
   const nav = [
@@ -31,15 +31,15 @@ export function hamburgerBtn() {
 </button>`;
 }
 
-// Shared footer used by every admin page. logo.png is versioned the same
-// way styles.css/main.js already are (?v=ASSET_VERSION) — without this,
-// Cloudflare's workers.dev edge cache can serve a HIT on the plain
-// unversioned URL indefinitely, bypassing the Worker (and its security
-// header injection) entirely. Bumping ASSET_VERSION on deploy forces a
-// brand-new cache key, guaranteeing a fresh fetch through the Worker.
+// Shared footer used by every admin page. logo.png is versioned per-file
+// (?v=<hash of logo.png itself>) — without this, Cloudflare's workers.dev
+// edge cache can serve a HIT on the plain unversioned URL indefinitely,
+// bypassing the Worker (and its security header injection) entirely.
+// Only a change to logo.png itself bumps its version now, instead of any
+// css/js change forcing every asset (including this one) to re-fetch.
 export function footerHtml(style = "") {
   const styleAttr = style ? ` style="${style}"` : "";
-  return `<footer${styleAttr}><img src="/logo.png?v=${ASSET_VERSION}" alt="Logo"></footer>`;
+  return `<footer${styleAttr}><img src="/logo.png?v=${assetVersion("logo.png")}" alt="Logo"></footer>`;
 }
 
 export function htmlShell(title, bodyContent, withCharts = false, nonce = "", withQR = false) {
@@ -51,14 +51,14 @@ export function htmlShell(title, bodyContent, withCharts = false, nonce = "", wi
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
   <title>${title} — BlackCode Project</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=${ASSET_VERSION}">
-  <link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}">
+  <link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}">
 </head>
 <body>
 ${bodyContent}
-<script${n} src="/js/main.js?v=${ASSET_VERSION}"></script>
-${withCharts ? `<script${n} src="/js/chartjs.min.js?v=${ASSET_VERSION}"></script><script${n} src="/js/chart.js?v=${ASSET_VERSION}"></script>` : ""}
-${withQR ? `<script${n} src="/js/qrcode.min.js?v=${ASSET_VERSION}"></script><script${n} src="/js/qr.js?v=${ASSET_VERSION}"></script>` : ""}
+<script${n} src="/js/main.js?v=${assetVersion("js/main.js")}"></script>
+${withCharts ? `<script${n} src="/js/chartjs.min.js?v=${assetVersion("js/chartjs.min.js")}"></script><script${n} src="/js/chart.js?v=${assetVersion("js/chart.js")}"></script>` : ""}
+${withQR ? `<script${n} src="/js/qrcode.min.js?v=${assetVersion("js/qrcode.min.js")}"></script><script${n} src="/js/qr.js?v=${assetVersion("js/qr.js")}"></script>` : ""}
 </body>
 </html>`;
 }

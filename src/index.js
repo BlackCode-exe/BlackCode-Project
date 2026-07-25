@@ -1,5 +1,5 @@
 import { makeSecurityHeaders, htmlHeaders, redirect, isAuthenticated } from "./utils/security.js";
-import { ASSET_VERSION } from "./utils/asset-version.js";
+import { assetVersion } from "./utils/asset-version.js";
 import { getLink, recordClick } from "./utils/kv.js";
 import { handleLogin, handleLogout } from "./handlers/auth.js";
 import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking, handleTrackingKeyseedLogs, handleTrackingStats } from "./handlers/admin.js";
@@ -79,14 +79,14 @@ export default {
     // ── Root page ─────────────────────────────────────────────
     const slug = pathname.slice(1);
     if (!slug) {
-      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${ASSET_VERSION}"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="root-page"><img src="/BlackCode-Logo.png?v=${ASSET_VERSION}" alt="BlackCode"></body></html>`;
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}"><link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}"></head><body class="root-page"><img src="/BlackCode-Logo.png?v=${assetVersion("BlackCode-Logo.png")}" alt="BlackCode"></body></html>`;
       return new Response(html, { headers: htmlHeaders() });
     }
 
     // ── Short link redirect ───────────────────────────────────
     const data = await getLink(env, slug);
     if (!data) {
-      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${ASSET_VERSION}"><link rel="stylesheet" href="/css/styles.css?v=${ASSET_VERSION}"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
+      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}"><link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
       return new Response(notFound, { status: 404, headers: htmlHeaders() });
     }
 
