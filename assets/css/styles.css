@@ -294,7 +294,7 @@ body.trespass-page {
   align-items:center; justify-content:center;
   text-align:center; gap:16px;
 }
-body.trespass-page .code { font-size:96px; font-weight:700; color:var(--danger); line-height:1; }
+body.trespass-page .code { font-size:96px; font-weight:700; color:#ff0000; text-shadow:0 0 24px rgba(255,0,0,0.45); line-height:1; }
 body.trespass-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#666; }
 body.trespass-page .trespass-logo { width:160px; height:auto; opacity:0.85; margin-top:8px; }
 
