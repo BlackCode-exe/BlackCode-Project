@@ -129,10 +129,6 @@ if (editBtn) {
 }
 
 // ── Link search (Stats page) ──────────────────────────────────
-// Used to live on the Dashboard (id="dashSearch"/"dashList" over
-// `.dash-row` items); moved to the Stats page, now filtering `.link-card`
-// items instead. Selector is [data-search] rather than a specific class so
-// it isn't tied to one page's markup.
 
 (function () {
   const input = document.getElementById('linkSearch');
