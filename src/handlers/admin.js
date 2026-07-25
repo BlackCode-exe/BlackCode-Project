@@ -9,9 +9,9 @@ import { adminTrackingPage, adminKeyseedLogPage, adminTrackStatsPage } from "../
 import { getTrackLog, getKeyseedLog, computeStats } from "./tracking.js";
 
 export async function handleDashboard(request, env) {
-  const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
+  const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
   const nonce = generateNonce();
-  return new Response(adminLinksPage(links, request, "", csrf || "", nonce), { headers: htmlHeaders(nonce) });
+  return new Response(adminLinksPage(links, recentTrack.entries, request, "", nonce), { headers: htmlHeaders(nonce) });
 }
 
 export async function handleAdd(request, env) {

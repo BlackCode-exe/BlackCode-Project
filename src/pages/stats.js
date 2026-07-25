@@ -12,13 +12,14 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
     : links.map(l => {
         const fullUrl = `https://${host}/${escHtml(l.slug)}`;
         const title   = l.title || l.slug;
+        const searchKey = `${(l.title || l.slug).toLowerCase()} ${l.slug.toLowerCase()}`;
         // data-date hydrated client-side (see main.js) so it always shows
         // in the viewer's own current timezone, not one baked in server-side.
         const dateCell = l.created
           ? `<span data-date="${new Date(l.created).getTime()}">${escHtml(new Date(l.created).toISOString().slice(0, 10))}</span>`
           : `<span>-</span>`;
         return `
-        <div class="link-card">
+        <div class="link-card" data-search="${escHtml(searchKey)}">
           <div class="link-card-top">
             <div class="link-card-main">
               <a href="/admin/link/${escHtml(l.slug)}" class="link-card-title-link"><div class="link-card-title">${escHtml(title)}</div></a>
@@ -88,8 +89,11 @@ ${sidebarHtml("stats")}
       <div class="stat-card"><div class="stat-label">Total Links</div><div class="stat-value">${totalLinks}</div></div>
       <div class="stat-card"><div class="stat-label">Total Clicks</div><div class="stat-value">${totalClicks}</div></div>
     </div>
+    <div class="dash-search-wrap" style="margin-bottom:20px;">
+      <input type="text" id="linkSearch" class="dash-search" placeholder="Search links...">
+    </div>
     <div class="section-title">All Links</div>
-    <div class="link-list">${cards}</div>
+    <div class="link-list" id="linkList">${cards}</div>
   </main>
   ${footerHtml()}
 </div>

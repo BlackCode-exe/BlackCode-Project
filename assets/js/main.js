@@ -128,21 +128,25 @@ if (editBtn) {
   editBtn.addEventListener('click', () => openModal('editModal'));
 }
 
-// ── Dashboard search ──────────────────────────────────────────
+// ── Link search (Stats page) ──────────────────────────────────
+// Used to live on the Dashboard (id="dashSearch"/"dashList" over
+// `.dash-row` items); moved to the Stats page, now filtering `.link-card`
+// items instead. Selector is [data-search] rather than a specific class so
+// it isn't tied to one page's markup.
 
 (function () {
-  const input = document.getElementById('dashSearch');
-  const list  = document.getElementById('dashList');
+  const input = document.getElementById('linkSearch');
+  const list  = document.getElementById('linkList');
   if (!input || !list) return;
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
-    const rows = list.querySelectorAll('.dash-row');
+    const items = list.querySelectorAll('[data-search]');
     let visible = 0;
-    rows.forEach(row => {
-      const text = row.dataset.search || "";
+    items.forEach(item => {
+      const text = item.dataset.search || "";
       const match = !q || text.includes(q);
-      row.hidden = !match;
+      item.hidden = !match;
       if (match) visible++;
     });
     let empty = list.querySelector('.dash-empty');

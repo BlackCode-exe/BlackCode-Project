@@ -234,7 +234,7 @@ input:focus { border-color:var(--accent); }
 .donut-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
 /* ── Stats link ── */
-.stats-link { color:var(--accent2); text-decoration:none; font-weight:700; }
+.stats-link { color:var(--accent2); text-decoration:none; font-weight:700; font-size:12px; }
 .stats-link:hover { text-decoration:underline; }
 
 /* ── Tables ── */
@@ -285,6 +285,18 @@ body.not-found-page {
 }
 body.not-found-page .code { font-size:96px; font-weight:700; color:#e8ff00; line-height:1; }
 body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#666; }
+
+/* ── 403 trespass gate page (direct browser hits on /api/*) ── */
+body.trespass-page {
+  height:100%; background:#0a0a0a; color:#f0f0f0;
+  font-family:'Montserrat',sans-serif;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; gap:16px;
+}
+body.trespass-page .code { font-size:96px; font-weight:700; color:var(--danger); line-height:1; }
+body.trespass-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#666; }
+body.trespass-page .trespass-logo { width:160px; height:auto; opacity:0.85; margin-top:8px; }
 
 /* ── Link card redesign ── */
 .link-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
@@ -357,6 +369,9 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .detail-created { font-size:11px; color:var(--muted); margin-top:8px; }
 
 /* ── Dashboard ── */
+.dash-welcome { font-size:20px; font-weight:700; margin-bottom:20px; color:var(--text); }
+.dash-welcome span { color:var(--accent); }
+
 .dash-summary {
   display:flex; gap:12px; margin-bottom:20px;
 }
@@ -367,6 +382,41 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 }
 .dash-stat-label { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
 .dash-stat-value { font-size:24px; font-weight:700; color:var(--accent); line-height:1; }
+
+/* ── Quick Menu ── */
+.quick-menu {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+  gap:12px;
+  margin-bottom:32px;
+}
+.quick-menu-item {
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:22px 12px; text-decoration:none; color:var(--text);
+  font-weight:700; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; text-align:center;
+  transition:border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.quick-menu-item svg { color:var(--accent); width:22px; height:22px; flex-shrink:0; }
+.quick-menu-item:hover { border-color:var(--accent); background:var(--surface2); }
+.quick-menu-item:active { transform:scale(0.97); }
+
+/* ── Recent Events / Recent Links two-column layout ── */
+.recent-columns {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+@media (max-width:640px) {
+  .recent-columns { grid-template-columns:1fr; }
+}
+.recent-col-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+.recent-col-title {
+  font-weight:700; font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);
+}
 
 .dash-search-wrap {
   position:relative;
@@ -397,6 +447,15 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 .dash-row-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .dash-row-clicks { font-size:12px; font-weight:700; color:var(--muted); min-width:20px; text-align:right; }
 .dash-row-right svg { color:var(--muted); }
+
+/* Non-clickable variant, used for Recent Events (no destination to link to) */
+.dash-row-plain {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 4px; border-bottom:1px solid var(--border); gap:12px;
+}
+.dash-row-plain .dash-row-title { font-weight:700; }
+.dash-row-sub { font-weight:400; font-size:12px; color:var(--muted); margin-left:6px; }
+.dash-row-ts { font-size:11px; color:var(--muted); white-space:nowrap; }
 
 .dash-empty { color:var(--muted); font-size:13px; padding:16px 4px; display:none; }
 

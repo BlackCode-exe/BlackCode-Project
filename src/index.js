@@ -1,10 +1,11 @@
-import { makeSecurityHeaders, htmlHeaders, redirect, isAuthenticated } from "./utils/security.js";
+import { makeSecurityHeaders, htmlHeaders, redirect, isAuthenticated, generateNonce } from "./utils/security.js";
 import { assetVersion } from "./utils/asset-version.js";
 import { getLink, recordClick } from "./utils/kv.js";
 import { handleLogin, handleLogout } from "./handlers/auth.js";
 import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking, handleTrackingKeyseedLogs, handleTrackingStats } from "./handlers/admin.js";
 import { handleCreate, handleEdit, handleDelete } from "./handlers/links.js";
 import { handleTrack, handleKeyseed, handleTrackLogs, handleKeyseedLogs, handleTrackStats } from "./handlers/tracking.js";
+import { trespassGatePage } from "./pages/gate.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -21,6 +22,18 @@ export default {
           ...makeSecurityHeaders(),
         },
       });
+    }
+
+    // ── /api/* browser gate ────────────────────────────────────
+    // A real API client (curl, the Ren'Py mod, a monitoring script) never
+    // sends Accept: text/html and never hits this — it still gets the
+    // normal JSON/401/429/etc. response from the handler below, untouched.
+    // This only catches a person typing/clicking an /api/* URL directly in
+    // a browser (GET navigation), replacing the raw JSON/404 they'd
+    // otherwise see with a themed page. Cosmetic UX, not a security control.
+    if (pathname.startsWith("/api/") && method === "GET" && (request.headers.get("Accept") || "").includes("text/html")) {
+      const nonce = generateNonce();
+      return new Response(trespassGatePage(), { status: 403, headers: htmlHeaders(nonce) });
     }
 
     // ── Static assets ─────────────────────────────────────────
