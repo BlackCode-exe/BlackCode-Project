@@ -43,6 +43,11 @@ assert_body_contains() {
   if echo "$body" | grep -qF "$needle"; then pass "$desc"; else fail "$desc — body did not contain expected content"; fi
 }
 
+assert_not_status() {
+  local desc="$1" unexpected="$2" actual="$3"
+  if [ "$actual" != "$unexpected" ]; then pass "$desc (status $actual, not $unexpected)"; else fail "$desc (got the unexpected $unexpected)"; fi
+}
+
 # Reads a cookie's value out of curl's Netscape-format cookie jar.
 jar_cookie() {
   awk -F'\t' -v name="$2" '$6==name{print $NF}' "$1" | tail -1
@@ -124,6 +129,12 @@ STATUS=$(curl -s -o /tmp/gate.html -w '%{http_code}' -H 'Accept: text/html,appli
 assert_status "/api/keyseed from a browser (Accept: text/html) gets the gate" "403" "${STATUS}"
 BODY=$(cat /tmp/gate.html)
 assert_body_contains "gate page shows TRESPASSING DETECTED" "TRESPASSING DETECTED" "${BODY}"
+
+# POST with no body at all must not throw — request.formData() inside
+# validateCsrf/validateLoginCsrf previously had no try/catch, so a bodyless
+# POST threw an uncaught exception (500) instead of a clean CSRF failure.
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/admin/login")
+assert_not_status "POST /admin/login with no body does NOT 500" "500" "${STATUS}"
 
 echo ""
 echo "── Authenticated flow ─────────────────────────"

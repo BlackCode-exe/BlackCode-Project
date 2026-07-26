@@ -65,6 +65,12 @@ export function generateToken() {
 // ── Timing-safe compare ───────────────────────────────────────
 
 export async function safeCompare(a, b) {
+  // A zero-length key throws in crypto.subtle.importKey (HMAC requires a
+  // non-empty key in this runtime), which was surfacing as an uncaught 500
+  // instead of a clean 401 whenever a request arrived with no secret/header
+  // at all. Neither side can be legitimately empty in a real comparison, so
+  // short-circuiting here is safe and doesn't change the result for any
+  // genuine attempt.
   if (!a || !b) return false;
   const enc = new TextEncoder();
   const ka   = await crypto.subtle.importKey("raw", enc.encode(a), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -187,7 +193,12 @@ export async function getCsrfToken(request, env) {
 }
 
 export async function validateCsrf(request, env) {
-  const form      = await request.clone().formData();
+  let form;
+  try {
+    form = await request.clone().formData();
+  } catch {
+    return false;
+  }
   const submitted = form.get("_csrf") || "";
   const expected  = await getCsrfToken(request, env);
   if (!expected || !submitted) return false;
@@ -219,7 +230,12 @@ export function getLoginCsrfCookie(request) {
 }
 
 export async function validateLoginCsrf(request) {
-  const form      = await request.clone().formData();
+  let form;
+  try {
+    form = await request.clone().formData();
+  } catch {
+    return false;
+  }
   const submitted = form.get("_csrf") || "";
   const expected  = getLoginCsrfCookie(request) || "";
   if (!expected || !submitted) return false;
