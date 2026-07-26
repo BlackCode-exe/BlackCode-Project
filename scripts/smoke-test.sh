@@ -144,6 +144,25 @@ assert_body_contains "gate page shows TRESPASSING DETECTED" "TRESPASSING DETECTE
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/admin/login")
 assert_not_status "POST /admin/login with no body does NOT 500" "500" "${STATUS}"
 
+# Login POST with a _csrf value but no login_csrf cookie at all — must not
+# reach the password check.
+BODY=$(curl -s -X POST "${BASE}/admin/login" \
+  --data-urlencode "username=${ADMIN_USER}" \
+  --data-urlencode "password=${ADMIN_PW}" \
+  --data-urlencode "_csrf=some-random-value")
+assert_body_contains "login POST with no login_csrf cookie is rejected" "Incorrect username or password" "${BODY}"
+
+# Login POST where the cookie is present but doesn't match the submitted
+# _csrf field.
+MISMATCH_JAR=$(mktemp)
+curl -s -c "${MISMATCH_JAR}" -o /dev/null "${BASE}/admin/login"
+BODY=$(curl -s -b "${MISMATCH_JAR}" -X POST "${BASE}/admin/login" \
+  --data-urlencode "username=${ADMIN_USER}" \
+  --data-urlencode "password=${ADMIN_PW}" \
+  --data-urlencode "_csrf=deliberately-wrong-value")
+assert_body_contains "login POST with mismatched CSRF cookie/field is rejected" "Incorrect username or password" "${BODY}"
+rm -f "${MISMATCH_JAR}"
+
 echo ""
 echo "── Authenticated flow ─────────────────────────"
 
@@ -168,6 +187,15 @@ assert_status "login with correct password redirects" "302" "${STATUS}"
 
 SESSION=$(jar_cookie "${COOKIES}" "bcs_auth")
 if [ -n "${SESSION}" ]; then pass "session cookie (bcs_auth) was set after login"; else fail "session cookie (bcs_auth) was set after login"; fi
+
+# Replay attack — reusing the exact same login_csrf token+cookie pair a
+# second time must now be rejected (single-use enforcement). Without this,
+# a captured token could log in repeatedly within its 10-minute window.
+BODY=$(curl -s -b "${COOKIES}" -X POST "${BASE}/admin/login" \
+  --data-urlencode "username=${ADMIN_USER}" \
+  --data-urlencode "password=${ADMIN_PW}" \
+  --data-urlencode "_csrf=${LOGIN_CSRF}")
+assert_body_contains "reusing the same login_csrf token is rejected" "Incorrect username or password" "${BODY}"
 
 # Step 3: dashboard renders for an authenticated session.
 BODY=$(curl -s -b "${COOKIES}" "${BASE}/admin")

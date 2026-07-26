@@ -12,7 +12,7 @@ export async function handleLogin(request, env, ctx) {
       return new Response(loginPage(true, true, nonce), { headers: htmlHeaders(nonce) });
     }
 
-    const csrfOk = await validateLoginCsrf(request);
+    const csrfOk = await validateLoginCsrf(request, env);
     if (!csrfOk) {
       const nonce = generateNonce();
       const csrfToken = generateToken();

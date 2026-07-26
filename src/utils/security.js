@@ -235,7 +235,7 @@ export function getLoginCsrfCookie(request) {
   return match ? match[1] : null;
 }
 
-export async function validateLoginCsrf(request) {
+export async function validateLoginCsrf(request, env) {
   let form;
   try {
     form = await request.clone().formData();
@@ -245,5 +245,17 @@ export async function validateLoginCsrf(request) {
   const submitted = form.get("_csrf") || "";
   const expected  = getLoginCsrfCookie(request) || "";
   if (!expected || !submitted) return false;
-  return await safeCompare(submitted, expected);
+  const matches = await safeCompare(submitted, expected);
+  if (!matches) return false;
+
+  // Single-use enforcement: without this, a captured login_csrf token+cookie
+  // pair could be replayed as many times as wanted within its 10-minute
+  // lifetime instead of being valid for exactly one POST. TTL matches the
+  // cookie's own Max-Age, so the "used" marker never outlives what it's
+  // guarding.
+  const usedKey = `used_login_csrf:${expected}`;
+  const already = await env.KV_BINDING.get(usedKey);
+  if (already) return false;
+  await env.KV_BINDING.put(usedKey, "1", { expirationTtl: 600 });
+  return true;
 }
