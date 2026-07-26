@@ -4,6 +4,7 @@ import { getLink, saveLink, deleteLink, listLinks } from "../utils/kv.js";
 import { flash } from "../utils/helpers.js";
 import { adminAddPage } from "../pages/add.js";
 import { adminLinksPage } from "../pages/dashboard.js";
+import { getTrackLog } from "./tracking.js";
 
 const RESERVED = ["admin","api","favicon.ico","logo.png","fonts","css","js","robots.txt","qrlogo.png","BlackCode-Logo.png"];
 
@@ -39,16 +40,15 @@ export async function handleEdit(request, env) {
   const newTarget  = (form.get("target") || "").trim();
   const newTitle   = (form.get("title") || "").trim();
   const redirectTo = form.get("redirect_to") || "";
-  const csrf       = await getCsrfToken(request, env) || "";
   const nonce      = generateNonce();
 
   if (!newSlug || !newTarget) {
-    const [links] = await Promise.all([listLinks(env)]);
-    return new Response(adminLinksPage(links, request, flash("error", "Both fields are required."), csrf, nonce), { headers: htmlHeaders(nonce) });
+    const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
+    return new Response(adminLinksPage(links, recentTrack.entries, request, flash("error", "Both fields are required."), nonce), { headers: htmlHeaders(nonce) });
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(newSlug)) {
-    const links = await listLinks(env);
-    return new Response(adminLinksPage(links, request, flash("error", "Slug: only letters, numbers, hyphens, underscores."), csrf, nonce), { headers: htmlHeaders(nonce) });
+    const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
+    return new Response(adminLinksPage(links, recentTrack.entries, request, flash("error", "Slug: only letters, numbers, hyphens, underscores."), nonce), { headers: htmlHeaders(nonce) });
   }
 
   const existing = await getLink(env, oldSlug);
@@ -56,8 +56,8 @@ export async function handleEdit(request, env) {
   await saveLink(env, newSlug, newTarget, newTitle, existing);
 
   if (redirectTo === "detail") return redirect(`/admin/link/${newSlug}`);
-  const [links, newCsrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
-  return new Response(adminLinksPage(links, request, flash("success", `Updated: /${newSlug}`), newCsrf || "", nonce), { headers: htmlHeaders(nonce) });
+  const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
+  return new Response(adminLinksPage(links, recentTrack.entries, request, flash("success", `Updated: /${newSlug}`), nonce), { headers: htmlHeaders(nonce) });
 }
 
 export async function handleDelete(request, env) {
@@ -68,6 +68,6 @@ export async function handleDelete(request, env) {
   const slug  = (form.get("slug") || "").trim();
   if (slug) await deleteLink(env, slug);
   const nonce = generateNonce();
-  const [links, csrf] = await Promise.all([listLinks(env), getCsrfToken(request, env)]);
-  return new Response(adminLinksPage(links, request, flash("success", `Deleted: /${slug}`), csrf || "", nonce), { headers: htmlHeaders(nonce) });
+  const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
+  return new Response(adminLinksPage(links, recentTrack.entries, request, flash("success", `Deleted: /${slug}`), nonce), { headers: htmlHeaders(nonce) });
 }
