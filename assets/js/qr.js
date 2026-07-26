@@ -21,7 +21,8 @@
     openModal('qrModal');
     if (finalCanvas) return;
 
-    qrCanvas.innerHTML = '';
+    // Native, Trusted-Types-safe clear (was qrCanvas.innerHTML = '').
+    qrCanvas.replaceChildren();
 
     // Temp container for QRCode lib
     const tempDiv = document.createElement('div');

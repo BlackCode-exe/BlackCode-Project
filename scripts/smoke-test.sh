@@ -106,6 +106,11 @@ assert_header_present "favicon.ico has Strict-Transport-Security" "Strict-Transp
 assert_header_present "favicon.ico has X-Content-Type-Options" "X-Content-Type-Options" /tmp/asset-headers.txt
 assert_header_present "favicon.ico has X-Frame-Options" "X-Frame-Options" /tmp/asset-headers.txt
 assert_header_present "favicon.ico has Content-Security-Policy" "Content-Security-Policy" /tmp/asset-headers.txt
+assert_header_present "favicon.ico has Origin-Agent-Cluster" "Origin-Agent-Cluster" /tmp/asset-headers.txt
+assert_header_present "favicon.ico has Cross-Origin-Opener-Policy" "Cross-Origin-Opener-Policy" /tmp/asset-headers.txt
+assert_header_present "favicon.ico has Cross-Origin-Resource-Policy" "Cross-Origin-Resource-Policy" /tmp/asset-headers.txt
+if grep -qi "object-src 'none'" /tmp/asset-headers.txt; then pass "CSP includes object-src 'none'"; else fail "CSP includes object-src 'none'"; fi
+if grep -qi "require-trusted-types-for 'script'" /tmp/asset-headers.txt; then pass "CSP includes require-trusted-types-for"; else fail "CSP includes require-trusted-types-for"; fi
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/admin")
 assert_status "unauthenticated /admin redirects" "302" "${STATUS}"

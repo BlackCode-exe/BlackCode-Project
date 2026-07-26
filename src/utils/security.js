@@ -23,15 +23,21 @@ export function makeSecurityHeaders(nonce = generateNonce()) {
       "font-src 'self'; " +
       "img-src 'self' data:; " +
       "connect-src 'none'; " +
+      "object-src 'none'; " +
+      "worker-src 'none'; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
-      "form-action 'self';",
-    "X-Frame-Options":           "DENY",
-    "X-Content-Type-Options":    "nosniff",
-    "Referrer-Policy":           "strict-origin-when-cross-origin",
-    "Permissions-Policy":        "geolocation=(), camera=(), microphone=()",
-    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-    "X-Robots-Tag":              "noindex, nofollow",
+      "form-action 'self'; " +
+      "require-trusted-types-for 'script';",
+    "X-Frame-Options":              "DENY",
+    "X-Content-Type-Options":       "nosniff",
+    "Referrer-Policy":              "strict-origin-when-cross-origin",
+    "Permissions-Policy":           "geolocation=(), camera=(), microphone=()",
+    "Strict-Transport-Security":    "max-age=63072000; includeSubDomains; preload",
+    "X-Robots-Tag":                 "noindex, nofollow",
+    "Origin-Agent-Cluster":         "?1",
+    "Cross-Origin-Opener-Policy":   "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
   };
 }
 
