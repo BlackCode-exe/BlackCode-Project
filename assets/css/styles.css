@@ -73,7 +73,10 @@ header .back-link:hover { color:var(--text); }
 /* ── Sidebar overlay ── */
 .sidebar-overlay {
   position:fixed;
-  inset:0;
+  top:69px;
+  left:0;
+  right:0;
+  bottom:0;
   background:rgba(0,0,0,0.6);
   z-index:90;
   opacity:0;
@@ -85,10 +88,10 @@ header .back-link:hover { color:var(--text); }
 /* ── Sidebar ── */
 .sidebar {
   position:fixed;
-  top:0;
+  top:69px;
   left:0;
   width:var(--sidebar-w);
-  height:100%;
+  height:calc(100% - 69px);
   background:var(--surface);
   border-right:1px solid var(--border);
   z-index:100;
@@ -96,7 +99,6 @@ header .back-link:hover { color:var(--text); }
   flex-direction:column;
   transform:translateX(-100%);
   transition:transform 0.3s ease;
-  padding-top:72px;
 }
 .sidebar.open { transform:translateX(0); }
 
