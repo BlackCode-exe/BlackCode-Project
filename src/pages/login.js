@@ -4,7 +4,7 @@ export function loginPage(error = false, locked = false, nonce = "", csrfToken =
   const msg = locked
     ? `<div class="alert alert-error">Too many failed attempts. Try again in 15 minutes.</div>`
     : error
-    ? `<div class="alert alert-error">Incorrect password.</div>`
+    ? `<div class="alert alert-error">Incorrect username or password.</div>`
     : "";
   const body = `
 <div class="login-wrap">
@@ -14,8 +14,12 @@ export function loginPage(error = false, locked = false, nonce = "", csrfToken =
     <form method="POST" action="/admin/login">
       <input type="hidden" name="_csrf" value="${csrfToken}">
       <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" autocomplete="username" autofocus required>
+      </div>
+      <div class="form-group">
         <label>Admin Password</label>
-        <input type="password" name="password" autofocus required>
+        <input type="password" name="password" autocomplete="current-password" required>
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Sign In</button>
     </form>

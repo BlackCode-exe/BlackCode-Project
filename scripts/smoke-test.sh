@@ -23,6 +23,7 @@ BASE="http://127.0.0.1:${PORT}"
 FAILURES=0
 COOKIES=$(mktemp)
 ADMIN_PW="smoke-test-dummy-password"
+ADMIN_USER="smoke-test-dummy-user"
 TEST_SLUG="smoketest-link-$$"
 
 pass() { echo "  PASS: $1"; }
@@ -61,6 +62,7 @@ extract_csrf() {
 
 # ── Dummy secrets for local dev only (never real values) ───────
 cat > .dev.vars <<EOF
+ADMIN_USERNAME=${ADMIN_USER}
 ADMIN_PASSWORD=${ADMIN_PW}
 SECRET_KEY=smoke-test-dummy-secret
 SEED_AUTH_KEY=smoke-test-dummy-seed-key
@@ -117,6 +119,7 @@ assert_status "unauthenticated /admin redirects" "302" "${STATUS}"
 
 BODY=$(curl -s "${BASE}/admin/login")
 assert_body_contains "login page has CSRF field" 'name="_csrf"' "${BODY}"
+assert_body_contains "login page has username field" 'name="username"' "${BODY}"
 assert_body_contains "login page has password field" 'name="password"' "${BODY}"
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/api/track" -H 'Content-Type: application/json' -d '{}')
@@ -158,6 +161,7 @@ fi
 # Step 2: log in with the dummy password.
 STATUS=$(curl -s -c "${COOKIES}" -b "${COOKIES}" -o /dev/null -w '%{http_code}' \
   -X POST "${BASE}/admin/login" \
+  --data-urlencode "username=${ADMIN_USER}" \
   --data-urlencode "password=${ADMIN_PW}" \
   --data-urlencode "_csrf=${LOGIN_CSRF}")
 assert_status "login with correct password redirects" "302" "${STATUS}"

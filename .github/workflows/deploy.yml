@@ -33,6 +33,7 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           secrets: |
+            ADMIN_USERNAME
             ADMIN_PASSWORD
             SECRET_KEY
             SEED_AUTH_KEY
@@ -42,6 +43,7 @@ jobs:
             GA4_API_SECRET
             DISCORD_ALERT_WEBHOOK
         env:
+          ADMIN_USERNAME: ${{ secrets.CF_ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.CF_ADMIN_PASSWORD }}
           SECRET_KEY: ${{ secrets.CF_SECRET_KEY }}
           SEED_AUTH_KEY: ${{ secrets.CF_SEED_AUTH_KEY }}

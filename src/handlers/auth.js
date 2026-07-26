@@ -21,9 +21,12 @@ export async function handleLogin(request, env, ctx) {
       });
     }
 
-    const form = await request.formData();
-    const pwd  = form.get("password") || "";
-    const ok   = await safeCompare(pwd, env.ADMIN_PASSWORD);
+    const form     = await request.formData();
+    const username = form.get("username") || "";
+    const pwd      = form.get("password") || "";
+    const userOk   = await safeCompare(username, env.ADMIN_USERNAME || "");
+    const pwdOk    = await safeCompare(pwd, env.ADMIN_PASSWORD);
+    const ok       = userOk && pwdOk;
     if (ok) {
       await clearRateLimit(env, ip);
       const { token } = await createSession(env);
