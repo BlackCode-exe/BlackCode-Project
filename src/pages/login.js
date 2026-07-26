@@ -18,7 +18,7 @@ export function loginPage(error = false, locked = false, nonce = "", csrfToken =
         <input type="text" name="username" autocomplete="username" autofocus required>
       </div>
       <div class="form-group">
-        <label>Admin Password</label>
+        <label>Password</label>
         <input type="password" name="password" autocomplete="current-password" required>
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Sign In</button>
