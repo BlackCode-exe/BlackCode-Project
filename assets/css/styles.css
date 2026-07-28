@@ -1,5 +1,5 @@
-@font-face { font-family:'Montserrat'; src:url('/fonts/Montserrat-Bold.woff') format('woff'); font-weight:700; font-display:swap; }
-@font-face { font-family:'Montserrat'; src:url('/fonts/Montserrat-Regular.woff') format('woff'); font-weight:400; font-display:swap; }
+@font-face { font-family:'PT Sans'; src:url('/fonts/PTSans-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+@font-face { font-family:'PT Sans'; src:url('/fonts/PTSans-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
 
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; outline:none; -webkit-tap-highlight-color:transparent; }
 a { text-decoration:none; color:inherit; }
@@ -7,7 +7,7 @@ a { text-decoration:none; color:inherit; }
 :root {
   --bg:#0a0a0a; --surface:#111111; --surface2:#161616; --border:#222222;
   --accent:#e8ff00; --accent2:#00e5ff; --text:#f0f0f0; --muted:#666666;
-  --danger:#ff3b3b; --success:#5fdd5f; --radius:6px; --font:'Montserrat',sans-serif;
+  --danger:#ff3b3b; --success:#5fdd5f; --radius:6px; --font:'PT Sans',sans-serif;
   --sidebar-w:260px;
 }
 
@@ -129,11 +129,17 @@ header .back-link:hover { color:var(--text); }
 .section-title { font-weight:700; font-size:15px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin:10px 0 15px 0; }
 .section-block { margin-bottom:32px; }
 
+/* ── Form card (wraps the form only — page title stays outside) ── */
+.form-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:24px; max-width:480px;
+}
+
 /* ── Form ── */
 .form-group { margin-bottom:18px; }
 label { display:block; font-weight:700; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 input[type="text"],input[type="url"],input[type="password"] {
-  width:100%; background:var(--surface); border:1px solid var(--border);
+  width:100%; background:var(--bg); border:1px solid var(--border);
   border-radius:var(--radius); color:var(--text); font-family:var(--font);
   font-size:14px; padding:10px 14px; outline:none; transition:border-color 0.15s;
 }
@@ -257,7 +263,7 @@ body.root-page img { display:block; max-width:100%; }
 /* ── 404 page ── */
 body.not-found-page {
   height:100%; background:#0a0a0a; color:#f0f0f0;
-  font-family:'Montserrat',sans-serif;
+  font-family:'PT Sans',sans-serif;
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   text-align:center; gap:16px;
@@ -268,7 +274,7 @@ body.not-found-page .msg { font-size:18px; font-weight:700; letter-spacing:0.1em
 /* ── 403 trespass gate page (direct browser hits on /api/*) ── */
 body.trespass-page {
   height:100%; background:#0a0a0a; color:#f0f0f0;
-  font-family:'Montserrat',sans-serif;
+  font-family:'PT Sans',sans-serif;
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   text-align:center; gap:16px;
