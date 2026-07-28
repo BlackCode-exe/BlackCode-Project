@@ -19,18 +19,18 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
           ? `<span data-date="${new Date(l.created).getTime()}">${escHtml(new Date(l.created).toISOString().slice(0, 10))}</span>`
           : `<span>-</span>`;
         return `
-        <div class="link-card" data-search="${escHtml(searchKey)}">
+        <article class="link-card" data-search="${escHtml(searchKey)}">
           <div class="link-card-top">
             <div class="link-card-main">
               <a href="/admin/link/${escHtml(l.slug)}" class="link-card-title-link"><div class="link-card-title">${escHtml(title)}</div></a>
               <div class="link-card-url-row">
                 <span class="link-card-url link-card-url-plain">${fullUrl}</span>
-                <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+                <button type="button" class="icon-btn icon-btn-sm" aria-label="Copy link" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
               </div>
               <div class="link-card-target">${escHtml(l.target)}</div>
             </div>
             <div class="link-card-menu-wrap">
-              <button type="button" class="icon-btn link-card-menu-btn" data-menu="stats-${escHtml(l.slug)}">
+              <button type="button" class="icon-btn link-card-menu-btn" data-menu="stats-${escHtml(l.slug)}" aria-label="More options">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
               </button>
               <div class="link-card-dropdown" id="menu-stats-${escHtml(l.slug)}">
@@ -47,7 +47,7 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
             <span class="link-card-clicks">Total Clicks: <strong>${l.clicks || 0}</strong></span>
             <span class="link-card-date">${dateCell}</span>
           </div>
-        </div>`;
+        </article>`;
       }).join("");
 
   const editModal = `
@@ -58,15 +58,15 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
       <input type="hidden" name="_csrf" value="${csrf}">
       <input type="hidden" name="old_slug" id="edit_old_slug">
       <div class="form-group">
-        <label>Title</label>
+        <label for="edit_title">Title</label>
         <input type="text" name="title" id="edit_title" placeholder="e.g. My Awesome Link">
       </div>
       <div class="form-group">
-        <label>Back-half</label>
+        <label for="edit_slug">Back-half</label>
         <input type="text" name="slug" id="edit_slug" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
       </div>
       <div class="form-group">
-        <label>Destination URL</label>
+        <label for="edit_target">Destination URL</label>
         <input type="url" name="target" id="edit_target" required>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
@@ -92,7 +92,7 @@ ${sidebarHtml("stats")}
     <div class="dash-search-wrap" style="margin-bottom:20px;">
       <input type="text" id="linkSearch" class="dash-search" placeholder="Search links...">
     </div>
-    <div class="section-title">All Links</div>
+    <h1 class="section-title">All Links</h1>
     <div class="link-list" id="linkList">${cards}</div>
   </main>
   ${footerHtml()}

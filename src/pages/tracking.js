@@ -58,7 +58,7 @@ ${sidebarHtml("tracking")}
       <div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">${totalLabel}</div></div>
       <div class="stat-card"><div class="stat-label">Unique Games</div><div class="stat-value">${uniqueGames}</div></div>
     </div>
-    <div class="section-title">Recent Tracking Events${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</div>
+    <h1 class="section-title">Recent Tracking Events${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
     <div class="dash-search-wrap" style="margin-bottom:16px;">
       <input type="text" id="trackSearch" class="dash-search" placeholder="Search by game, event, country, Ren'Py version, platform...">
     </div>
@@ -114,7 +114,7 @@ ${sidebarHtml("tracking")}
       <div class="stat-card"><div class="stat-label">Unauthorized</div><div class="stat-value">${unauthorizedCount}</div></div>
       <div class="stat-card"><div class="stat-label">Rate Limited</div><div class="stat-value">${rateLimitedCount}</div></div>
     </div>
-    <div class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</div>
+    <h1 class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
     <div class="dash-search-wrap" style="margin-bottom:16px;">
       <input type="text" id="keyseedSearch" class="dash-search" placeholder="Search by status, IP, or user agent...">
     </div>
@@ -148,10 +148,10 @@ export function adminTrackStatsPage(stats, nonce = "", hasMore = false) {
         <div class="breakdown-count">${e.usage_count}</div>
       </div>`).join("");
     return `
-    <div class="section-block">
-      <div class="section-title">${escHtml(g.game)} <span class="track-table-ua">— ${g.total_usage} total</span></div>
+    <section class="section-block">
+      <h2 class="section-title">${escHtml(g.game)} <span class="track-table-ua">— ${g.total_usage} total</span></h2>
       <div class="breakdown-list">${rows}</div>
-    </div>`;
+    </section>`;
   }).join("");
 
   const body = `
@@ -163,6 +163,7 @@ ${sidebarHtml("tracking")}
   </header>
   ${subnavHtml("stats")}
   <main>
+    <h1 class="section-title">Usage Stats by Game</h1>
     ${hasMore ? `<div class="alert" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);">Based on the latest tracked events — older history beyond that isn't included in this breakdown.</div>` : ""}
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Games Tracked</div><div class="stat-value">${totalGames}</div></div>

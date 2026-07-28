@@ -10,21 +10,21 @@ ${sidebarHtml("add")}
   </header>
   <main>
     ${flashMsg}
-    <div class="section-title">Create New Short Link</div>
+    <h1 class="section-title">Create New Short Link</h1>
     <form method="POST" action="/admin/create" style="max-width:480px;">
       <input type="hidden" name="_csrf" value="${csrf}">
       <div class="form-group">
-        <label>Title</label>
-        <input type="text" name="title" placeholder="e.g. My Awesome Link">
+        <label for="add_title">Title</label>
+        <input type="text" id="add_title" name="title" placeholder="e.g. My Awesome Link">
       </div>
       <div class="form-group">
-        <label>Back-half (custom path)</label>
-        <input type="text" name="slug" placeholder="e.g. my-link" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
+        <label for="add_slug">Back-half (custom path)</label>
+        <input type="text" id="add_slug" name="slug" placeholder="e.g. my-link" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
         <div class="input-hint">Only letters, numbers, hyphens, underscores. No spaces.</div>
       </div>
       <div class="form-group">
-        <label>Destination URL</label>
-        <input type="url" name="target" placeholder="https://example.com/very-long-url" required>
+        <label for="add_target">Destination URL</label>
+        <input type="url" id="add_target" name="target" placeholder="https://example.com/very-long-url" required>
       </div>
       <button type="submit" class="btn btn-primary">Create Link</button>
     </form>

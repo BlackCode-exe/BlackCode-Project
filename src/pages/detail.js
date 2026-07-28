@@ -1,5 +1,6 @@
 import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
+import { assetVersion } from "../utils/asset-version.js";
 import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
 
 export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
@@ -85,16 +86,16 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
       <input type="hidden" name="old_slug" value="${escHtml(slug)}">
       <input type="hidden" name="redirect_to" value="detail">
       <div class="form-group">
-        <label>Title</label>
-        <input type="text" name="title" value="${escHtml(data.title || "")}" placeholder="e.g. My Awesome Link">
+        <label for="detail_edit_title">Title</label>
+        <input type="text" id="detail_edit_title" name="title" value="${escHtml(data.title || "")}" placeholder="e.g. My Awesome Link">
       </div>
       <div class="form-group">
-        <label>Back-half</label>
-        <input type="text" name="slug" value="${escHtml(slug)}" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
+        <label for="detail_edit_slug">Back-half</label>
+        <input type="text" id="detail_edit_slug" name="slug" value="${escHtml(slug)}" required pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, hyphens, underscores">
       </div>
       <div class="form-group">
-        <label>Destination URL</label>
-        <input type="url" name="target" value="${escHtml(data.target)}" required>
+        <label for="detail_edit_target">Destination URL</label>
+        <input type="url" id="detail_edit_target" name="target" value="${escHtml(data.target)}" required>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
         <button type="button" class="btn btn-danger" data-close-modal="editModal">Cancel</button>
@@ -111,7 +112,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   const devColJson  = btoa(unescape(encodeURIComponent(JSON.stringify(deviceColArr))));
 
   const body = `
-<div class="wrapper" data-qr-url="${fullUrl}" data-qr-title="${escHtml(linkTitle)}">
+<div class="wrapper" data-qr-url="${fullUrl}" data-qr-title="${escHtml(linkTitle)}" data-qrlogo-version="${assetVersion("qrlogo.png")}">
   <header>
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
@@ -120,9 +121,9 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   <main>
     <div class="detail-header">
       <div class="detail-header-top">
-        <div class="detail-title">${escHtml(linkTitle)}</div>
+        <h1 class="detail-title">${escHtml(linkTitle)}</h1>
         <div class="link-card-menu-wrap">
-          <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug">
+          <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug" aria-label="More options">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
           </button>
           <div class="link-card-dropdown" id="menu-detail-slug">
@@ -141,7 +142,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
       </div>
       <div class="detail-url-row">
         <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
-        <button type="button" class="icon-btn icon-btn-sm" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
+        <button type="button" class="icon-btn icon-btn-sm" aria-label="Copy link" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
       </div>
       <div class="detail-target-row">
         <span class="detail-target-arrow">↳</span>
@@ -155,33 +156,33 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
       <div class="num-card"><div class="num-label">Today</div><div class="num-value">${today}</div></div>
     </div>
 
-    <div class="section-block">
-      <div class="section-title">Clicks — Last 30 Days</div>
+    <section class="section-block">
+      <h2 class="section-title">Clicks — Last 30 Days</h2>
       <div class="chart-wrap"><canvas id="clickChart" data-labels="${chartLabels}" data-values="${chartData}"></canvas></div>
-    </div>
+    </section>
 
-    <div class="section-block">
-      <div class="section-title">Devices</div>
+    <section class="section-block">
+      <h2 class="section-title">Devices</h2>
       <div class="chart-wrap chart-wrap-auto">
         <div class="donut-wrap">
           <div class="donut-canvas-wrap"><canvas id="deviceChart" data-labels="${devLabJson}" data-values="${devDataJson}" data-colors="${devColJson}"></canvas></div>
           <div class="donut-legend">${deviceLegend}</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="section-block">
-      <div class="section-title">Locations</div>
+    <section class="section-block">
+      <h2 class="section-title">Locations</h2>
       <table class="links-table">
         <thead><tr><th>Country</th><th>City</th></tr></thead>
         <tbody>${locationRows}</tbody>
       </table>
-    </div>
+    </section>
 
-    <div class="section-block">
-      <div class="section-title">Referrers</div>
+    <section class="section-block">
+      <h2 class="section-title">Referrers</h2>
       <div class="breakdown-list">${refRows}</div>
-    </div>
+    </section>
   </main>
   ${footerHtml()}
 </div>
@@ -191,7 +192,7 @@ ${editModal}
   <div class="modal-box modal-box-qr">
     <div class="qr-modal-header">
       <span class="qr-modal-title">QR Code</span>
-      <button type="button" class="qr-close-btn" data-close-modal="qrModal">
+      <button type="button" class="qr-close-btn" aria-label="Close" data-close-modal="qrModal">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>

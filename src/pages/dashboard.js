@@ -41,9 +41,9 @@ ${sidebarHtml("links")}
   </header>
   <main>
     ${flashMsg}
-    <div class="dash-welcome">Welcome back, <span>Black</span>!</div>
+    <h1 class="dash-welcome">Welcome back, <span>Black</span>!</h1>
 
-    <div class="section-title">Quick Menu</div>
+    <h2 class="section-title">Quick Menu</h2>
     <div class="quick-menu">
       <a href="/admin/add" class="quick-menu-item">${ICON_ADD}<span>Create Link</span></a>
       <a href="/admin/stats" class="quick-menu-item">${ICON_STATS}<span>Link Stats</span></a>
@@ -51,20 +51,20 @@ ${sidebarHtml("links")}
     </div>
 
     <div class="recent-columns">
-      <div class="recent-col">
+      <section class="recent-col">
         <div class="recent-col-header">
-          <span class="recent-col-title">Recent Events</span>
+          <h2 class="recent-col-title">Recent Events</h2>
           <a href="/admin/tracking" class="stats-link">See details..</a>
         </div>
         <div class="dash-list">${eventRows}</div>
-      </div>
-      <div class="recent-col">
+      </section>
+      <section class="recent-col">
         <div class="recent-col-header">
-          <span class="recent-col-title">Recent Links</span>
+          <h2 class="recent-col-title">Recent Links</h2>
           <a href="/admin/stats" class="stats-link">See details..</a>
         </div>
         <div class="dash-list">${linkRows}</div>
-      </div>
+      </section>
     </div>
   </main>
   ${footerHtml()}

@@ -7,13 +7,16 @@
   const qrDownload = document.getElementById('qrDownload');
   if (!qrBtn || !qrModal || !qrCanvas) return;
 
-  const wrapper  = document.querySelector('[data-qr-url]');
-  const url      = wrapper ? wrapper.dataset.qrUrl : window.location.href;
-  const rawTitle = wrapper ? (wrapper.dataset.qrTitle || "QR-Code") : "QR-Code";
-  const filename = "QR-" + rawTitle.replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") + ".png";
+  const wrapper   = document.querySelector('[data-qr-url]');
+  const url       = wrapper ? wrapper.dataset.qrUrl : window.location.href;
+  const rawTitle  = wrapper ? (wrapper.dataset.qrTitle || "QR-Code") : "QR-Code";
+  const filename  = "QR-" + rawTitle.replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") + ".png";
+  // Version comes from the server (assetVersion("qrlogo.png")) via a data
+  // attribute — this file is served as-is with no template interpolation,
+  // so it can't compute the hash itself.
+  const qrlogoVer = wrapper ? (wrapper.dataset.qrlogoVersion || "0") : "0";
 
-  const RENDER_SIZE  = 512; // actual canvas size (download resolution)
-  const DISPLAY_SIZE = 300; // CSS display size
+  const RENDER_SIZE = 512; // actual canvas size (download resolution)
 
   let finalCanvas = null;
 
@@ -72,7 +75,7 @@
           finish(canvas);
         };
         logo.onerror = () => finish(canvas);
-        logo.src = '/qrlogo.png';
+        logo.src = '/qrlogo.png?v=' + qrlogoVer;
       };
 
       qrImg.src = srcCanvas ? srcCanvas.toDataURL() : srcImg.src;
