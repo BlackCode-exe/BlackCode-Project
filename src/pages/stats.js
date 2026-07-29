@@ -90,6 +90,7 @@ ${sidebarHtml("stats")}
       <div class="stat-card"><div class="stat-label">Total Clicks</div><div class="stat-value">${totalClicks}</div></div>
     </div>
     <div class="dash-search-wrap" style="margin-bottom:20px;">
+      <label for="linkSearch" class="sr-only">Search links</label>
       <input type="text" id="linkSearch" class="dash-search" placeholder="Search links...">
     </div>
     <h1 class="section-title">All Links</h1>

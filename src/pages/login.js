@@ -8,7 +8,7 @@ export function loginPage(error = false, locked = false, nonce = "", csrfToken =
     : "";
   const body = `
 <div class="login-wrap">
-  <div class="login-box">
+  <main class="login-box">
     <h1 class="login-title"><span>BlackCode</span> Project</h1>
     ${msg}
     <form method="POST" action="/admin/login">
@@ -23,7 +23,7 @@ export function loginPage(error = false, locked = false, nonce = "", csrfToken =
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Sign In</button>
     </form>
-  </div>
+  </main>
   ${footerHtml("border:none;padding:8px;")}
 </div>`;
   return htmlShell("Login", body, false, nonce);

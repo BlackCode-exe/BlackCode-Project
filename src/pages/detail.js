@@ -141,7 +141,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
         </div>
       </div>
       <div class="detail-url-row">
-        <a href="/${escHtml(slug)}" target="_blank" class="detail-shortlink">${fullUrl}</a>
+        <a href="/${escHtml(slug)}" target="_blank" rel="noopener noreferrer" class="detail-shortlink">${fullUrl}</a>
         <button type="button" class="icon-btn icon-btn-sm" aria-label="Copy link" title="Copy" data-copy="${fullUrl}">${ICON_COPY}</button>
       </div>
       <div class="detail-target-row">

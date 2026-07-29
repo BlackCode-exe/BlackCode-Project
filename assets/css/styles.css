@@ -531,3 +531,14 @@ body.trespass-page .trespass-logo { width:160px; height:auto; opacity:0.85; marg
 .status-danger { background:#2a0d0d; color:var(--danger); border:1px solid #5c1a1a; }
 .status-warn { background:#2a2410; color:#e8c700; border:1px solid #5c4f1a; }
 .track-table-ua { color:var(--muted); font-size:11px; }
+
+/* ── Screen-reader-only (visually hidden but accessible label text) ── */
+.sr-only {
+  position:absolute;
+  width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}

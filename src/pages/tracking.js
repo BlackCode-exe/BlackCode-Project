@@ -60,6 +60,7 @@ ${sidebarHtml("tracking")}
     </div>
     <h1 class="section-title">Recent Tracking Events${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
     <div class="dash-search-wrap" style="margin-bottom:16px;">
+      <label for="trackSearch" class="sr-only">Search tracking events</label>
       <input type="text" id="trackSearch" class="dash-search" placeholder="Search by game, event, country, Ren'Py version, platform...">
     </div>
     <div class="track-table-wrap">
@@ -116,6 +117,7 @@ ${sidebarHtml("tracking")}
     </div>
     <h1 class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
     <div class="dash-search-wrap" style="margin-bottom:16px;">
+      <label for="keyseedSearch" class="sr-only">Search keyseed access logs</label>
       <input type="text" id="keyseedSearch" class="dash-search" placeholder="Search by status, IP, or user agent...">
     </div>
     <div class="track-table-wrap">
