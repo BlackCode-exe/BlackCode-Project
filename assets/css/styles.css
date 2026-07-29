@@ -241,7 +241,7 @@ input:focus { border-color:var(--accent); }
 
 /* ── Login ── */
 .login-wrap { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:32px; }
-.login-box { width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:32px; }
+.login-box { flex:none; width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:32px; }
 .login-title { font-weight:700; font-size:20px; letter-spacing:0.06em; margin-bottom:24px; }
 .login-title span { color:var(--accent); }
 
