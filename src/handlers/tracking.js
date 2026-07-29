@@ -170,22 +170,30 @@ export async function handleTrack(request, env, ctx) {
 //   - auth via header X-Bc-Auth
 //   - success body = raw KEYSEED_RAW bytes, Content-Type: application/octet-stream
 //   - never wrapped in JSON, never re-encoded
+//
+// X-Bc-Script (optional, added by renpy_encryption.py's Remote mode): a
+// client-chosen identifier naming which .rpy file/script is requesting the
+// key (e.g. "scripts", "toolkit"). Purely a label for admin-side tracking —
+// not validated, not part of the auth decision. Logged on every outcome
+// (OK/UNAUTHORIZED/RATE_LIMITED) as `file` so the Keyseed Logs table can
+// show which file each request was for.
 export async function handleKeyseed(request, env, ctx) {
   const killed = await env.KV_BINDING.get(KEYSEED_KILL_SWITCH_KEY);
   if (killed) return jsonResponse({ status: "disabled" }, 503);
 
   const clientIp  = getClientIp(request);
   const userAgent = request.headers.get("User-Agent") || "";
+  const fileName  = request.headers.get("X-Bc-Script") || "unknown";
 
   const allowed = await checkRateLimit(env, "rl:keyseed", clientIp, KEYSEED_RATE_MAX, KEYSEED_RATE_WINDOW);
   if (!allowed) {
-    await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "RATE_LIMITED", ip: clientIp, ua: userAgent });
+    await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "RATE_LIMITED", ip: clientIp, ua: userAgent, file: fileName });
     return jsonResponse({ status: "rate_limited" }, 429);
   }
 
   const secret = request.headers.get("X-Bc-Auth") || "";
   if (!await safeCompare(secret, env.SEED_AUTH_KEY || "")) {
-    await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "UNAUTHORIZED", ip: clientIp, ua: userAgent });
+    await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "UNAUTHORIZED", ip: clientIp, ua: userAgent, file: fileName });
     await flagGlobalUnauthorized(env, ctx);
     return jsonResponse({ status: "unauthorized" }, 401);
   }
@@ -194,7 +202,7 @@ export async function handleKeyseed(request, env, ctx) {
     return jsonResponse({ status: "error" }, 500);
   }
 
-  await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "OK", ip: clientIp, ua: userAgent });
+  await writeLogEntry(env, KEYSEED_PREFIX, { ts: Date.now(), status: "OK", ip: clientIp, ua: userAgent, file: fileName });
 
   return new Response(env.KEYSEED_RAW, {
     status: 200,
@@ -237,7 +245,7 @@ export async function handleKeyseedLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const { entries } = await getKeyseedLog(env);
-  const lines = entries.map(e => `${new Date(e.ts).toISOString()} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
+  const lines = entries.map(e => `${new Date(e.ts).toISOString()} | File: ${e.file || "unknown"} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
 }
 

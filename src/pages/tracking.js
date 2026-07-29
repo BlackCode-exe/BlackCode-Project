@@ -91,9 +91,12 @@ export function adminKeyseedLogPage(data, nonce = "") {
   };
 
   const rows = entries.map(e => {
-    const searchBlob = [e.status, e.ip, e.ua].join(" ").toLowerCase();
+    // e.file is absent on entries logged before X-Bc-Script tracking was
+    // added — shows "-" for those, same as any other missing field here.
+    const searchBlob = [e.file, e.status, e.ip, e.ua].join(" ").toLowerCase();
     return `<tr data-search="${escHtml(searchBlob)}">
       <td data-ts="${e.ts}">${escHtml(new Date(e.ts).toISOString())}</td>
+      <td>${escHtml(e.file || "-")}</td>
       <td><span class="status-badge ${statusClass[e.status] || ""}">${escHtml(e.status || "-")}</span></td>
       <td>${escHtml(e.ip || "-")}</td>
       <td class="track-table-ua">${escHtml(e.ua || "-")}</td>
@@ -118,14 +121,14 @@ ${sidebarHtml("tracking")}
     <h1 class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
     <div class="dash-search-wrap" style="margin-bottom:16px;">
       <label for="keyseedSearch" class="sr-only">Search keyseed access logs</label>
-      <input type="text" id="keyseedSearch" class="dash-search" placeholder="Search by status, IP, or user agent...">
+      <input type="text" id="keyseedSearch" class="dash-search" placeholder="Search by file name, status, IP, or user agent...">
     </div>
     <div class="track-table-wrap">
       <table class="track-table" id="keyseedTable">
         <thead>
-          <tr><th>Time</th><th>Status</th><th>IP</th><th>User Agent</th></tr>
+          <tr><th>Time</th><th>File Name</th><th>Status</th><th>IP</th><th>User Agent</th></tr>
         </thead>
-        <tbody id="keyseedTableBody">${rows || `<tr><td colspan="4" class="track-table-empty">No keyseed access attempts yet.</td></tr>`}</tbody>
+        <tbody id="keyseedTableBody">${rows || `<tr><td colspan="5" class="track-table-empty">No keyseed access attempts yet.</td></tr>`}</tbody>
       </table>
     </div>
   </main>
