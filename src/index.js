@@ -78,7 +78,7 @@ export default {
       if (pathname === "/admin/create" && method === "POST")            return handleCreate(request, env);
       if (pathname === "/admin/edit" && method === "POST")              return handleEdit(request, env);
       if (pathname === "/admin/delete" && method === "POST")            return handleDelete(request, env);
-      if (pathname === "/admin/stats" && method === "GET")              return handleStats(request, env);
+      if (pathname === "/admin/link" && method === "GET")               return handleStats(request, env);
       if (pathname === "/admin/tracking" && method === "GET")           return handleTracking(request, env);
       if (pathname === "/admin/tracking/keyseed" && method === "GET")   return handleTrackingKeyseedLogs(request, env);
       if (pathname === "/admin/tracking/stats" && method === "GET")     return handleTrackingStats(request, env);
@@ -92,14 +92,14 @@ export default {
     // ── Root page ─────────────────────────────────────────────
     const slug = pathname.slice(1);
     if (!slug) {
-      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}"><link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}"></head><body class="root-page"><main><img src="/BlackCode-Logo.png?v=${assetVersion("BlackCode-Logo.png")}" alt="BlackCode"></main></body></html>`;
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>BlackCode Project</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}"><link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}"></head><body class="root-page"><img src="/BlackCode-Logo.png?v=${assetVersion("BlackCode-Logo.png")}" alt="BlackCode"></body></html>`;
       return new Response(html, { headers: htmlHeaders() });
     }
 
     // ── Short link redirect ───────────────────────────────────
     const data = await getLink(env, slug);
     if (!data) {
-      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}"><link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}"></head><body class="not-found-page"><main><div class="code">404</div><h1 class="msg">Link Not Found</h1></main></body></html>`;
+      const notFound = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="robots" content="noindex, nofollow"><title>404</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=${assetVersion("favicon.ico")}"><link rel="stylesheet" href="/css/styles.css?v=${assetVersion("css/styles.css")}"></head><body class="not-found-page"><div class="code">404</div><div class="msg">Link Not Found</div></body></html>`;
       return new Response(notFound, { status: 404, headers: htmlHeaders() });
     }
 

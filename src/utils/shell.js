@@ -5,7 +5,7 @@ export function sidebarHtml(active) {
   const nav = [
     { id: "links",     label: "Dashboard", href: "/admin",           icon: ICON_HOME     },
     { id: "add",       label: "Add Link",  href: "/admin/add",       icon: ICON_ADD      },
-    { id: "stats",     label: "Stats",     href: "/admin/stats",     icon: ICON_STATS    },
+    { id: "link",      label: "Links",     href: "/admin/link",      icon: ICON_STATS    },
     { id: "tracking",  label: "Tracking",  href: "/admin/tracking",  icon: ICON_ACTIVITY },
   ];
   return `

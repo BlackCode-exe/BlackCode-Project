@@ -78,7 +78,7 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
 </div>`;
 
   const body = `
-${sidebarHtml("stats")}
+${sidebarHtml("link")}
 <div class="wrapper">
   <header>
     ${hamburgerBtn()}
@@ -99,5 +99,5 @@ ${sidebarHtml("stats")}
   ${footerHtml()}
 </div>
 ${editModal}`;
-  return htmlShell("Stats", body, false, nonce);
+  return htmlShell("Links", body, false, nonce);
 }

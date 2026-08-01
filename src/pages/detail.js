@@ -116,7 +116,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   <header>
     ${hamburgerBtn()}
     <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
-    <a href="/admin/stats" class="back-link">← All Links</a>
+    <a href="/admin/link" class="back-link">← All Links</a>
   </header>
   <main>
     <div class="detail-header">
@@ -202,5 +202,5 @@ ${editModal}
   </div>
 </div>`;
 
-  return htmlShell(`Stats — ${linkTitle}`, body, true, nonce, true);
+  return htmlShell(`Links — ${linkTitle}`, body, true, nonce, true);
 }

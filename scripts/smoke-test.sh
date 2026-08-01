@@ -255,8 +255,8 @@ assert_status "delete link does NOT 500" "200" "${STATUS}"
 assert_body_contains "delete re-renders the dashboard" "Welcome back" "$(cat /tmp/delete.html)"
 
 # Step 8: other authenticated pages still render.
-STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/stats")
-assert_status "/admin/stats renders" "200" "${STATUS}"
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/link")
+assert_status "/admin/link renders" "200" "${STATUS}"
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/tracking")
 assert_status "/admin/tracking renders" "200" "${STATUS}"
