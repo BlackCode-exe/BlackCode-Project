@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
+import { htmlShell, headerHtml, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 import { assetVersion } from "../utils/asset-version.js";
 import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
@@ -6,8 +6,6 @@ import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
 export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const history  = data.history || [];
   const fullUrl  = `https://${host}/${escHtml(slug)}`;
-  // data-date hydrated client-side (see main.js) so it always shows in the
-  // viewer's own current timezone, not one baked in server-side.
   const createdCell = data.created
     ? `<span data-date="${new Date(data.created).getTime()}">${escHtml(new Date(data.created).toISOString().slice(0, 10))}</span>`
     : `<span>-</span>`;
@@ -15,11 +13,9 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   const total    = data.clicks || 0;
   const linkTitle = data.title || slug;
 
-  // Today
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const today = history.filter(h => h.ts >= todayStart.getTime()).length;
 
-  // Clicks last 30 days
   const days30 = [], labels30 = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
@@ -28,7 +24,6 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
     labels30.push(d.toLocaleDateString("en-US", { month:"short", day:"numeric" }));
   }
 
-  // Devices
   const deviceCount  = {};
   history.forEach(h => { deviceCount[h.device] = (deviceCount[h.device] || 0) + 1; });
   const deviceColors = { Mobile:"#00e5ff", Desktop:"#e8ff00", Tablet:"#ff9900", Unknown:"#444" };
@@ -36,7 +31,6 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   const deviceData   = deviceLabels.map(d => deviceCount[d]);
   const deviceColArr = deviceLabels.map(d => deviceColors[d] || "#888");
 
-  // Locations
   const locMap = {};
   history.forEach(h => {
     const country = h.country || "Unknown";
@@ -47,7 +41,6 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   });
   const topLocs = Object.values(locMap).sort((a,b) => b.count - a.count).slice(0, 10);
 
-  // Referrers
   const refCount = {};
   history.forEach(h => { refCount[h.ref] = (refCount[h.ref] || 0) + 1; });
   const topRefs  = Object.entries(refCount).sort((a,b) => b[1]-a[1]).slice(0, 5);
@@ -79,8 +72,8 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
 
   const editModal = `
 <div class="modal-overlay" id="editModal">
-  <div class="modal-box">
-    <div class="modal-title">Edit Link</div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal-title" id="editModalTitle">Edit Link</div>
     <form method="POST" action="/admin/edit">
       <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="old_slug" value="${escHtml(slug)}">
@@ -113,17 +106,13 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
 
   const body = `
 <div class="wrapper" data-qr-url="${fullUrl}" data-qr-title="${escHtml(linkTitle)}" data-qrlogo-version="${assetVersion("qrlogo.png")}">
-  <header>
-    ${hamburgerBtn()}
-    <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
-    <a href="/admin/link" class="back-link">← All Links</a>
-  </header>
+  ${headerHtml({ activeNav: "", showSearch: false, backLink: { href: "/admin/link", label: "← All Links" } })}
   <main>
     <div class="detail-header">
       <div class="detail-header-top">
         <h1 class="detail-title">${escHtml(linkTitle)}</h1>
         <div class="link-card-menu-wrap">
-          <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug" aria-label="More options">
+          <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug" aria-label="More options" aria-haspopup="true" aria-expanded="false">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
           </button>
           <div class="link-card-dropdown" id="menu-detail-slug">
@@ -186,12 +175,11 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   </main>
   ${footerHtml()}
 </div>
-${sidebarHtml("")}
 ${editModal}
 <div class="modal-overlay" id="qrModal">
-  <div class="modal-box modal-box-qr">
+  <div class="modal-box modal-box-qr" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
     <div class="qr-modal-header">
-      <span class="qr-modal-title">QR Code</span>
+      <span class="qr-modal-title" id="qrModalTitle">QR Code</span>
       <button type="button" class="qr-close-btn" aria-label="Close" data-close-modal="qrModal">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>

@@ -52,3 +52,34 @@ export async function handleTrackingStats(request, env) {
   const nonce = generateNonce();
   return new Response(adminTrackStatsPage(computeStats(entries), nonce, hasMore), { headers: htmlHeaders(nonce) });
 }
+
+// GET /admin/search?q=... — powers the unified header search box. Already
+// behind the /admin auth guard in index.js (session cookie required), same
+// protection level as every other admin page; no separate rate limit since
+// this can only be hit by an already-authenticated session.
+export async function handleSearch(request, env) {
+  const url = new URL(request.url);
+  const q   = (url.searchParams.get("q") || "").trim().toLowerCase();
+
+  if (!q) {
+    return new Response(JSON.stringify({ links: [], events: [] }), {
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    });
+  }
+
+  const [links, trackData] = await Promise.all([listLinks(env), getTrackLog(env, 200)]);
+
+  const matchedLinks = links
+    .filter(l => (l.title || "").toLowerCase().includes(q) || l.slug.toLowerCase().includes(q) || (l.target || "").toLowerCase().includes(q))
+    .slice(0, 8)
+    .map(l => ({ slug: l.slug, title: l.title || l.slug, clicks: l.clicks || 0 }));
+
+  const matchedEvents = trackData.entries
+    .filter(e => [e.game, e.eventid, e.country, e.city, e.platform].some(v => (v || "").toLowerCase().includes(q)))
+    .slice(0, 8)
+    .map(e => ({ game: e.game, eventid: e.eventid, ts: e.ts }));
+
+  return new Response(JSON.stringify({ links: matchedLinks, events: matchedEvents }), {
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+}

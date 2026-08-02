@@ -61,14 +61,14 @@ extract_csrf() {
 }
 
 # ── Dummy secrets for local dev only (never real values) ───────
-cat > .dev.vars <<EOF
+cat > .dev.vars <<DEVVARS_EOF
 ADMIN_USERNAME=${ADMIN_USER}
 ADMIN_PASSWORD=${ADMIN_PW}
 SECRET_KEY=smoke-test-dummy-secret
 SEED_AUTH_KEY=smoke-test-dummy-seed-key
 LOGS_PASSWORD=smoke-test-dummy-logs-password
 KEYSEED_RAW=smoke-test-dummy-keyseed-bytes
-EOF
+DEVVARS_EOF
 
 echo "Starting local wrangler dev on port ${PORT}..."
 npx wrangler dev dist/index.js --local --port "${PORT}" --ip 127.0.0.1 > /tmp/wrangler-dev.log 2>&1 &
@@ -116,6 +116,9 @@ if grep -qi "require-trusted-types-for 'script'" /tmp/asset-headers.txt; then pa
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/admin")
 assert_status "unauthenticated /admin redirects" "302" "${STATUS}"
+
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/admin/search?q=test")
+assert_status "unauthenticated /admin/search redirects" "302" "${STATUS}"
 
 BODY=$(curl -s "${BASE}/admin/login")
 assert_body_contains "login page has CSRF field" 'name="_csrf"' "${BODY}"
@@ -204,12 +207,12 @@ assert_body_contains "dashboard renders after login" "Welcome back" "${BODY}"
 # Step 4: grab a session-bound CSRF token from a real admin page (this is a
 # different token from login_csrf — it's tied to the session, not the
 # pre-login double-submit cookie) and create a throwaway test link.
-curl -s -b "${COOKIES}" -o /tmp/add.html "${BASE}/admin/add"
+curl -s -b "${COOKIES}" -o /tmp/add.html "${BASE}/admin/link/create"
 CSRF=$(extract_csrf /tmp/add.html)
 if [ -z "${CSRF}" ]; then
-  fail "extracted a session CSRF token from /admin/add"
+  fail "extracted a session CSRF token from /admin/link/create"
 else
-  pass "extracted a session CSRF token from /admin/add"
+  pass "extracted a session CSRF token from /admin/link/create"
 fi
 
 STATUS=$(curl -s -b "${COOKIES}" -o /tmp/create.html -w '%{http_code}' \
@@ -220,6 +223,10 @@ STATUS=$(curl -s -b "${COOKIES}" -o /tmp/create.html -w '%{http_code}' \
   --data-urlencode "_csrf=${CSRF}")
 assert_status "create link succeeds" "200" "${STATUS}"
 assert_body_contains "create link shows success message" "Link created" "$(cat /tmp/create.html)"
+
+# Step 4b: unified header search endpoint returns the link just created.
+BODY=$(curl -s -b "${COOKIES}" "${BASE}/admin/search?q=${TEST_SLUG}")
+assert_body_contains "/admin/search finds the created link" "${TEST_SLUG}" "${BODY}"
 
 # Step 5: regression test — an invalid edit (empty slug/target) must
 # re-render the dashboard cleanly, not throw. This is the exact path that

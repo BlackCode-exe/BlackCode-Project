@@ -10,6 +10,7 @@
     sidebar.classList.add('open');
     overlay.classList.add('open');
     btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
     document.body.style.overflow = 'hidden';
   }
 
@@ -17,6 +18,7 @@
     sidebar.classList.remove('open');
     overlay.classList.remove('open');
     btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
   }
 
@@ -82,6 +84,11 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
 // ── Dropdown menu ("...") ─────────────────────────────────────
 
 (function () {
+  function setMenuExpanded(slug, expanded) {
+    const btn = document.querySelector(`[data-menu="${slug}"]`);
+    if (btn) btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+
   document.querySelectorAll('.link-card-menu-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -89,15 +96,20 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
       const dropdown = document.getElementById('menu-' + slug);
       if (!dropdown) return;
       document.querySelectorAll('.link-card-dropdown.open').forEach(d => {
-        if (d !== dropdown) d.classList.remove('open');
+        if (d !== dropdown) {
+          d.classList.remove('open');
+          setMenuExpanded(d.id.replace('menu-', ''), false);
+        }
       });
-      dropdown.classList.toggle('open');
+      const nowOpen = dropdown.classList.toggle('open');
+      setMenuExpanded(slug, nowOpen);
     });
   });
 
   document.addEventListener('click', () => {
     document.querySelectorAll('.link-card-dropdown.open').forEach(d => {
       d.classList.remove('open');
+      setMenuExpanded(d.id.replace('menu-', ''), false);
     });
   });
 })();
@@ -128,75 +140,108 @@ if (editBtn) {
   editBtn.addEventListener('click', () => openModal('editModal'));
 }
 
-// ── Link search (Stats page) ──────────────────────────────────
+// ── Header search (unified — replaces the old per-page search bars) ──
+// Icon expands a panel with an input + All/Link/Track tabs; results are
+// fetched from /admin/search and rendered inline in the same panel, no
+// dedicated results page.
 
 (function () {
-  const input = document.getElementById('linkSearch');
-  const list  = document.getElementById('linkList');
-  if (!input || !list) return;
+  const toggleBtn = document.getElementById('searchToggleBtn');
+  const panel     = document.getElementById('searchPanel');
+  const input     = document.getElementById('searchInput');
+  const resultsEl = document.getElementById('searchResults');
+  const tabs      = document.querySelectorAll('.search-tab');
+  if (!toggleBtn || !panel || !input || !resultsEl) return;
+
+  let currentFilter  = 'all';
+  let debounceTimer  = null;
+  let lastData       = { links: [], events: [] };
+
+  function openPanel() {
+    panel.hidden = false;
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    input.focus();
+  }
+  function closePanel() {
+    panel.hidden = true;
+    toggleBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  toggleBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    panel.hidden ? openPanel() : closePanel();
+  });
+  panel.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => {
+    if (!panel.hidden) closePanel();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !panel.hidden) closePanel();
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function renderResults() {
+    const showLinks  = currentFilter === 'all' || currentFilter === 'link';
+    const showEvents = currentFilter === 'all' || currentFilter === 'track';
+    const links  = showLinks  ? lastData.links  : [];
+    const events = showEvents ? lastData.events : [];
+
+    if (links.length === 0 && events.length === 0) {
+      resultsEl.innerHTML = input.value.trim()
+        ? '<div class="search-empty">No results.</div>'
+        : '';
+      return;
+    }
+
+    let html = '';
+    if (links.length) {
+      html += '<div class="search-group-label">Links</div>';
+      links.forEach(l => {
+        html += `<a class="search-result-item" href="/admin/link/${encodeURIComponent(l.slug)}">
+          <span class="search-result-title">${escapeHtml(l.title)}</span>
+          <span class="search-result-meta">${l.clicks} clicks</span>
+        </a>`;
+      });
+    }
+    if (events.length) {
+      html += '<div class="search-group-label">Track Events</div>';
+      events.forEach(e => {
+        html += `<div class="search-result-item search-result-static">
+          <span class="search-result-title">${escapeHtml(e.game)}</span>
+          <span class="search-result-meta">${escapeHtml(e.eventid)}</span>
+        </div>`;
+      });
+    }
+    resultsEl.innerHTML = html;
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      currentFilter = tab.dataset.filter;
+      renderResults();
+    });
+  });
+
+  function runSearch(q) {
+    if (!q) { lastData = { links: [], events: [] }; renderResults(); return; }
+    fetch('/admin/search?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => { lastData = data; renderResults(); })
+      .catch(() => { resultsEl.innerHTML = '<div class="search-empty">Search failed.</div>'; });
+  }
 
   input.addEventListener('input', () => {
-    const q = input.value.trim().toLowerCase();
-    const items = list.querySelectorAll('[data-search]');
-    let visible = 0;
-    items.forEach(item => {
-      const text = item.dataset.search || "";
-      const match = !q || text.includes(q);
-      item.hidden = !match;
-      if (match) visible++;
-    });
-    let empty = list.querySelector('.dash-empty');
-    if (!empty) {
-      empty = document.createElement('div');
-      empty.className = 'dash-empty';
-      empty.textContent = 'No links found.';
-      list.appendChild(empty);
-    }
-    empty.style.display = visible === 0 ? 'block' : 'none';
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    debounceTimer = setTimeout(() => runSearch(q), 250);
   });
 })();
-
-// ── Generic table-row search ────────────────────────────────
-function wireTableSearch(inputId, tbodyId, emptyText) {
-  const input = document.getElementById(inputId);
-  const tbody = document.getElementById(tbodyId);
-  if (!input || !tbody) return;
-
-  const rows = Array.from(tbody.querySelectorAll('tr[data-search]'));
-  if (rows.length === 0) return;
-
-  const colCount = rows[0].children.length;
-  let emptyRow = null;
-
-  input.addEventListener('input', () => {
-    const q = input.value.trim().toLowerCase();
-    let visible = 0;
-    rows.forEach(row => {
-      const match = !q || row.dataset.search.includes(q);
-      row.hidden = !match;
-      if (match) visible++;
-    });
-
-    if (visible === 0) {
-      if (!emptyRow) {
-        emptyRow = document.createElement('tr');
-        emptyRow.className = 'search-empty-row';
-        const td = document.createElement('td');
-        td.colSpan = colCount;
-        td.className = 'track-table-empty';
-        td.textContent = emptyText;
-        emptyRow.appendChild(td);
-        tbody.appendChild(emptyRow);
-      }
-      emptyRow.hidden = false;
-    } else if (emptyRow) {
-      emptyRow.hidden = true;
-    }
-  });
-}
-
-wireTableSearch('trackSearch', 'trackTableBody', 'No tracking events match your search.');
-wireTableSearch('keyseedSearch', 'keyseedTableBody', 'No keyseed access entries match your search.');
 
 // ── Timezone-aware ────────────────────────────────────────
 

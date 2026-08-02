@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
+import { htmlShell, headerHtml, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
 
@@ -12,14 +12,11 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
     : links.map(l => {
         const fullUrl = `https://${host}/${escHtml(l.slug)}`;
         const title   = l.title || l.slug;
-        const searchKey = `${(l.title || l.slug).toLowerCase()} ${l.slug.toLowerCase()}`;
-        // data-date hydrated client-side (see main.js) so it always shows
-        // in the viewer's own current timezone, not one baked in server-side.
         const dateCell = l.created
           ? `<span data-date="${new Date(l.created).getTime()}">${escHtml(new Date(l.created).toISOString().slice(0, 10))}</span>`
           : `<span>-</span>`;
         return `
-        <article class="link-card" data-search="${escHtml(searchKey)}">
+        <article class="link-card">
           <div class="link-card-top">
             <div class="link-card-main">
               <a href="/admin/link/${escHtml(l.slug)}" class="link-card-title-link"><div class="link-card-title">${escHtml(title)}</div></a>
@@ -30,7 +27,7 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
               <div class="link-card-target">${escHtml(l.target)}</div>
             </div>
             <div class="link-card-menu-wrap">
-              <button type="button" class="icon-btn link-card-menu-btn" data-menu="stats-${escHtml(l.slug)}" aria-label="More options">
+              <button type="button" class="icon-btn link-card-menu-btn" data-menu="stats-${escHtml(l.slug)}" aria-label="More options" aria-haspopup="true" aria-expanded="false">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
               </button>
               <div class="link-card-dropdown" id="menu-stats-${escHtml(l.slug)}">
@@ -52,8 +49,8 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
 
   const editModal = `
 <div class="modal-overlay" id="editModal">
-  <div class="modal-box">
-    <div class="modal-title">Edit Link</div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal-title" id="editModalTitle">Edit Link</div>
     <form method="POST" action="/admin/edit">
       <input type="hidden" name="_csrf" value="${csrf}">
       <input type="hidden" name="old_slug" id="edit_old_slug">
@@ -78,23 +75,17 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
 </div>`;
 
   const body = `
-${sidebarHtml("link")}
 <div class="wrapper">
-  <header>
-    ${hamburgerBtn()}
-    <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
-  </header>
+  ${headerHtml({ activeNav: "link" })}
   <main>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Total Links</div><div class="stat-value">${totalLinks}</div></div>
       <div class="stat-card"><div class="stat-label">Total Clicks</div><div class="stat-value">${totalClicks}</div></div>
     </div>
-    <div class="dash-search-wrap" style="margin-bottom:20px;">
-      <label for="linkSearch" class="sr-only">Search links</label>
-      <input type="text" id="linkSearch" class="dash-search" placeholder="Search links...">
-    </div>
-    <h1 class="section-title">All Links</h1>
-    <div class="link-list" id="linkList">${cards}</div>
+    <section aria-labelledby="allLinksHeading">
+      <h1 id="allLinksHeading" class="section-title">All Links</h1>
+      <div class="link-list" id="linkList">${cards}</div>
+    </section>
   </main>
   ${footerHtml()}
 </div>

@@ -1,4 +1,4 @@
-import { htmlShell, sidebarHtml, hamburgerBtn, footerHtml } from "../utils/shell.js";
+import { htmlShell, headerHtml, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 
 function subnavHtml(active) {
@@ -8,9 +8,9 @@ function subnavHtml(active) {
     { id: "stats",   label: "Stats",          href: "/admin/tracking/stats" },
   ];
   return `
-<nav class="subnav">
+<nav class="subnav" aria-label="Tracking sections">
   <div class="subnav-inner">
-    ${tabs.map(t => `<a href="${t.href}" class="subnav-tab${active === t.id ? " active" : ""}">${t.label}</a>`).join("")}
+    ${tabs.map(t => `<a href="${t.href}" class="subnav-tab${active === t.id ? " active" : ""}"${active === t.id ? ' aria-current="page"' : ""}>${t.label}</a>`).join("")}
   </div>
 </nav>`;
 }
@@ -30,10 +30,7 @@ export function adminTrackingPage(data, nonce = "") {
   const totalLabel  = hasMore ? `${entries.length}+` : String(entries.length);
   const uniqueGames = new Set(entries.map(e => e.game)).size;
 
-  const rows = entries.map(e => {
-    const searchBlob = [e.country, e.region, e.city, e.game, e.eventid, e.renpy_version, e.platform]
-      .join(" ").toLowerCase();
-    return `<tr data-search="${escHtml(searchBlob)}">
+  const rows = entries.map(e => `<tr>
       <td data-ts="${e.ts}">${escHtml(new Date(e.ts).toISOString())}</td>
       <td>${escHtml(e.country || "-")}</td>
       <td>${escHtml(e.region || "-")}</td>
@@ -42,16 +39,11 @@ export function adminTrackingPage(data, nonce = "") {
       <td>${escHtml(e.eventid || "-")}</td>
       <td>${escHtml(e.renpy_version || "-")}</td>
       <td>${escHtml(e.platform || "-")}</td>
-    </tr>`;
-  }).join("");
+    </tr>`).join("");
 
   const body = `
-${sidebarHtml("tracking")}
 <div class="wrapper">
-  <header>
-    ${hamburgerBtn()}
-    <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
-  </header>
+  ${headerHtml({ activeNav: "tracking" })}
   ${subnavHtml("track")}
   <main>
     <div class="stats-grid">
@@ -59,10 +51,6 @@ ${sidebarHtml("tracking")}
       <div class="stat-card"><div class="stat-label">Unique Games</div><div class="stat-value">${uniqueGames}</div></div>
     </div>
     <h1 class="section-title">Recent Tracking Events${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
-    <div class="dash-search-wrap" style="margin-bottom:16px;">
-      <label for="trackSearch" class="sr-only">Search tracking events</label>
-      <input type="text" id="trackSearch" class="dash-search" placeholder="Search by game, event, country, Ren'Py version, platform...">
-    </div>
     <div class="track-table-wrap">
       <table class="track-table" id="trackTable">
         <thead>
@@ -90,26 +78,17 @@ export function adminKeyseedLogPage(data, nonce = "") {
     RATE_LIMITED: "status-warn",
   };
 
-  const rows = entries.map(e => {
-    // e.file is absent on entries logged before X-Bc-Script tracking was
-    // added — shows "-" for those, same as any other missing field here.
-    const searchBlob = [e.file, e.status, e.ip, e.ua].join(" ").toLowerCase();
-    return `<tr data-search="${escHtml(searchBlob)}">
+  const rows = entries.map(e => `<tr>
       <td data-ts="${e.ts}">${escHtml(new Date(e.ts).toISOString())}</td>
       <td>${escHtml(e.file || "-")}</td>
       <td><span class="status-badge ${statusClass[e.status] || ""}">${escHtml(e.status || "-")}</span></td>
       <td>${escHtml(e.ip || "-")}</td>
       <td class="track-table-ua">${escHtml(e.ua || "-")}</td>
-    </tr>`;
-  }).join("");
+    </tr>`).join("");
 
   const body = `
-${sidebarHtml("tracking")}
 <div class="wrapper">
-  <header>
-    ${hamburgerBtn()}
-    <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
-  </header>
+  ${headerHtml({ activeNav: "tracking" })}
   ${subnavHtml("keyseed")}
   <main>
     <div class="stats-grid">
@@ -119,10 +98,6 @@ ${sidebarHtml("tracking")}
       <div class="stat-card"><div class="stat-label">Rate Limited</div><div class="stat-value">${rateLimitedCount}</div></div>
     </div>
     <h1 class="section-title">Recent Keyseed Access${hasMore ? ` (showing latest ${entries.length}, older events not shown)` : ""}</h1>
-    <div class="dash-search-wrap" style="margin-bottom:16px;">
-      <label for="keyseedSearch" class="sr-only">Search keyseed access logs</label>
-      <input type="text" id="keyseedSearch" class="dash-search" placeholder="Search by file name, status, IP, or user agent...">
-    </div>
     <div class="track-table-wrap">
       <table class="track-table" id="keyseedTable">
         <thead>
@@ -160,12 +135,8 @@ export function adminTrackStatsPage(stats, nonce = "", hasMore = false) {
   }).join("");
 
   const body = `
-${sidebarHtml("tracking")}
 <div class="wrapper">
-  <header>
-    ${hamburgerBtn()}
-    <a href="/admin" class="brand">BlackCode <span>/</span> Project</a>
-  </header>
+  ${headerHtml({ activeNav: "tracking" })}
   ${subnavHtml("stats")}
   <main>
     <h1 class="section-title">Usage Stats by Game</h1>
