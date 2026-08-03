@@ -1,33 +1,34 @@
 // ── QR Code with center logo ──────────────────────────────────
+// Supports multiple trigger buttons on one page (e.g. every link card on
+// /admin/link, not just the single link on the detail page) — each
+// [data-qr-trigger] button carries its own url/title/logo-version, and
+// the shared modal regenerates only when the requested url actually
+// changes from what's currently shown.
 
 (function () {
-  const qrBtn      = document.getElementById('qrBtn');
   const qrModal    = document.getElementById('qrModal');
   const qrCanvas   = document.getElementById('qrCanvas');
   const qrDownload = document.getElementById('qrDownload');
-  if (!qrBtn || !qrModal || !qrCanvas) return;
-
-  const wrapper   = document.querySelector('[data-qr-url]');
-  const url       = wrapper ? wrapper.dataset.qrUrl : window.location.href;
-  const rawTitle  = wrapper ? (wrapper.dataset.qrTitle || "QR-Code") : "QR-Code";
-  const filename  = "QR-" + rawTitle.replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") + ".png";
-  // Version comes from the server (assetVersion("qrlogo.png")) via a data
-  // attribute — this file is served as-is with no template interpolation,
-  // so it can't compute the hash itself.
-  const qrlogoVer = wrapper ? (wrapper.dataset.qrlogoVersion || "0") : "0";
+  const qrLabel    = document.getElementById('qrLabel');
+  if (!qrModal || !qrCanvas) return;
 
   const RENDER_SIZE = 512; // actual canvas size (download resolution)
 
   let finalCanvas = null;
+  let currentUrl  = null;
+  let currentFile = "QR-Code.png";
 
-  qrBtn.addEventListener('click', () => {
-    openModal('qrModal');
-    if (finalCanvas) return;
+  function makeFilename(title) {
+    return "QR-" + String(title).replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") + ".png";
+  }
 
-    // Native, Trusted-Types-safe clear (was qrCanvas.innerHTML = '').
+  function generateQr(url, title, qrlogoVer) {
+    currentUrl  = url;
+    currentFile = makeFilename(title || "QR-Code");
+    finalCanvas = null;
     qrCanvas.replaceChildren();
+    if (qrLabel) qrLabel.textContent = title || "";
 
-    // Temp container for QRCode lib
     const tempDiv = document.createElement('div');
     tempDiv.style.display = 'none';
     document.body.appendChild(tempDiv);
@@ -54,26 +55,20 @@
 
       const qrImg  = new Image();
       qrImg.onload = () => {
-        // Draw QR
         ctx.drawImage(qrImg, 0, 0, RENDER_SIZE, RENDER_SIZE);
 
-        // Logo overlay
         const logoSize = Math.round(RENDER_SIZE * 0.20);
         const logoX    = (RENDER_SIZE - logoSize) / 2;
         const logoY    = (RENDER_SIZE - logoSize) / 2;
         const pad      = Math.round(RENDER_SIZE * 0.025);
 
-        // White circle bg
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
         ctx.arc(RENDER_SIZE / 2, RENDER_SIZE / 2, (logoSize / 2) + pad, 0, Math.PI * 2);
         ctx.fill();
 
         const logo   = new Image();
-        logo.onload  = () => {
-          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-          finish(canvas);
-        };
+        logo.onload  = () => { ctx.drawImage(logo, logoX, logoY, logoSize, logoSize); finish(canvas); };
         logo.onerror = () => finish(canvas);
         logo.src = '/qrlogo.png?v=' + qrlogoVer;
       };
@@ -81,18 +76,28 @@
       qrImg.src = srcCanvas ? srcCanvas.toDataURL() : srcImg.src;
       document.body.removeChild(tempDiv);
     }, 150);
-  });
+  }
 
   function finish(canvas) {
     finalCanvas = canvas;
     qrCanvas.appendChild(canvas);
   }
 
+  document.querySelectorAll('[data-qr-trigger]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openModal('qrModal');
+      const url = btn.dataset.qrUrl;
+      const title = btn.dataset.qrTitle || "QR-Code";
+      const ver = btn.dataset.qrlogoVersion || "0";
+      if (currentUrl !== url) generateQr(url, title, ver);
+    });
+  });
+
   if (qrDownload) {
     qrDownload.addEventListener('click', () => {
       if (!finalCanvas) return;
       const link    = document.createElement('a');
-      link.download = filename;
+      link.download = currentFile;
       link.href     = finalCanvas.toDataURL('image/png');
       link.click();
     });

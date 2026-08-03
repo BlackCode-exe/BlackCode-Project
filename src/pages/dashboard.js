@@ -1,6 +1,6 @@
 import { htmlShell, headerHtml, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
-import { ICON_ADD, ICON_STATS, ICON_ACTIVITY } from "../utils/icons.js";
+import { ICON_ADD, ICON_STATS, ICON_ACTIVITY, ICON_CHEVRON_RIGHT } from "../utils/icons.js";
 
 export function adminLinksPage(links, recentEvents, request, flashMsg = "", nonce = "") {
   // "Based on click activity" — most recently clicked first, not most
@@ -19,7 +19,7 @@ export function adminLinksPage(links, recentEvents, request, flashMsg = "", nonc
           <div class="dash-row-title">${escHtml(title)}</div>
           <div class="dash-row-right">
             <span class="dash-row-clicks">${l.clicks || 0}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            ${ICON_CHEVRON_RIGHT}
           </div>
         </a></article>`;
       }).join("");

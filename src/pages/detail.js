@@ -1,7 +1,7 @@
 import { htmlShell, headerHtml, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
 import { assetVersion } from "../utils/asset-version.js";
-import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
+import { ICON_EDIT, ICON_TRASH, ICON_COPY, ICON_MENU_DOTS, ICON_QR, ICON_CLOSE } from "../utils/icons.js";
 
 export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = "") {
   const history  = data.history || [];
@@ -12,6 +12,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   const targetShort = data.target.length > 40 ? data.target.slice(0, 37) + "..." : data.target;
   const total    = data.clicks || 0;
   const linkTitle = data.title || slug;
+  const qrlogoVer = assetVersion("qrlogo.png");
 
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const today = history.filter(h => h.ts >= todayStart.getTime()).length;
@@ -105,7 +106,7 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
   const devColJson  = btoa(unescape(encodeURIComponent(JSON.stringify(deviceColArr))));
 
   const body = `
-<div class="wrapper" data-qr-url="${fullUrl}" data-qr-title="${escHtml(linkTitle)}" data-qrlogo-version="${assetVersion("qrlogo.png")}">
+<div class="wrapper">
   ${headerHtml({ activeNav: "", showSearch: false, backLink: { href: "/admin/link", label: "← All Links" } })}
   <main>
     <div class="detail-header">
@@ -113,14 +114,11 @@ export function adminLinkDetailPage(slug, data, host, nonce = "", csrfToken = ""
         <h1 class="detail-title">${escHtml(linkTitle)}</h1>
         <div class="link-card-menu-wrap">
           <button type="button" class="icon-btn link-card-menu-btn" data-menu="detail-slug" aria-label="More options" aria-haspopup="true" aria-expanded="false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            ${ICON_MENU_DOTS}
           </button>
           <div class="link-card-dropdown" id="menu-detail-slug">
             <button type="button" class="dropdown-item" id="editBtn">${ICON_EDIT} Edit Link</button>
-            <button type="button" class="dropdown-item" id="qrBtn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
-              Create QR Code
-            </button>
+            <button type="button" class="dropdown-item" data-qr-trigger data-qr-url="${fullUrl}" data-qr-title="${escHtml(linkTitle)}" data-qrlogo-version="${qrlogoVer}">${ICON_QR} Create QR Code</button>
             <form method="POST" action="/admin/delete">
               <input type="hidden" name="_csrf" value="${csrfToken}">
               <input type="hidden" name="slug" value="${escHtml(slug)}">
@@ -180,12 +178,10 @@ ${editModal}
   <div class="modal-box modal-box-qr" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
     <div class="qr-modal-header">
       <span class="qr-modal-title" id="qrModalTitle">QR Code</span>
-      <button type="button" class="qr-close-btn" aria-label="Close" data-close-modal="qrModal">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <button type="button" class="qr-close-btn" aria-label="Close" data-close-modal="qrModal">${ICON_CLOSE}</button>
     </div>
     <div id="qrCanvas" style="margin:12px 0;"></div>
-    <div class="qr-label">${escHtml(linkTitle)}</div>
+    <div class="qr-label" id="qrLabel"></div>
     <button type="button" class="btn btn-primary" id="qrDownload">Download QR</button>
   </div>
 </div>`;

@@ -65,15 +65,11 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('open');
 }
 
-// ── Modal overlay click to close ─────────────────────────────
-
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) overlay.classList.remove('open');
   });
 });
-
-// ── Cancel buttons ────────────────────────────────────────────
 
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -140,10 +136,12 @@ if (editBtn) {
   editBtn.addEventListener('click', () => openModal('editModal'));
 }
 
-// ── Header search (unified — replaces the old per-page search bars) ──
-// Icon expands a panel with an input + All/Link/Track tabs; results are
-// fetched from /admin/search and rendered inline in the same panel, no
-// dedicated results page.
+// ── Header search ──────────────────────────────────────────
+// Results are built with DOM APIs (createElement/textContent), never
+// innerHTML — the CSP's require-trusted-types-for 'script' blocks raw
+// string assignment to innerHTML, so building nodes directly is what
+// actually works under that policy (and needs no Trusted Types policy
+// registration to bypass it).
 
 (function () {
   const toggleBtn = document.getElementById('searchToggleBtn');
@@ -153,9 +151,9 @@ if (editBtn) {
   const tabs      = document.querySelectorAll('.search-tab');
   if (!toggleBtn || !panel || !input || !resultsEl) return;
 
-  let currentFilter  = 'all';
-  let debounceTimer  = null;
-  let lastData       = { links: [], events: [] };
+  let currentFilter = 'all';
+  let debounceTimer = null;
+  let lastData      = { links: [], events: [] };
 
   function openPanel() {
     panel.hidden = false;
@@ -179,43 +177,72 @@ if (editBtn) {
     if (e.key === 'Escape' && !panel.hidden) closePanel();
   });
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  function clearResults() {
+    while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
+  }
+
+  function addGroupLabel(text) {
+    const div = document.createElement('div');
+    div.className = 'search-group-label';
+    div.textContent = text;
+    resultsEl.appendChild(div);
+  }
+
+  function addResultLink(slug, title, meta) {
+    const a = document.createElement('a');
+    a.className = 'search-result-item';
+    a.href = '/admin/link/' + encodeURIComponent(slug);
+    const t = document.createElement('span');
+    t.className = 'search-result-title';
+    t.textContent = title;
+    const m = document.createElement('span');
+    m.className = 'search-result-meta';
+    m.textContent = meta;
+    a.appendChild(t);
+    a.appendChild(m);
+    resultsEl.appendChild(a);
+  }
+
+  function addResultStatic(title, meta) {
+    const div = document.createElement('div');
+    div.className = 'search-result-item search-result-static';
+    const t = document.createElement('span');
+    t.className = 'search-result-title';
+    t.textContent = title;
+    const m = document.createElement('span');
+    m.className = 'search-result-meta';
+    m.textContent = meta;
+    div.appendChild(t);
+    div.appendChild(m);
+    resultsEl.appendChild(div);
+  }
+
+  function addEmpty(text) {
+    const div = document.createElement('div');
+    div.className = 'search-empty';
+    div.textContent = text;
+    resultsEl.appendChild(div);
   }
 
   function renderResults() {
+    clearResults();
     const showLinks  = currentFilter === 'all' || currentFilter === 'link';
     const showEvents = currentFilter === 'all' || currentFilter === 'track';
     const links  = showLinks  ? lastData.links  : [];
     const events = showEvents ? lastData.events : [];
 
     if (links.length === 0 && events.length === 0) {
-      resultsEl.innerHTML = input.value.trim()
-        ? '<div class="search-empty">No results.</div>'
-        : '';
+      if (input.value.trim()) addEmpty('No results.');
       return;
     }
-
-    let html = '';
     if (links.length) {
-      html += '<div class="search-group-label">Links</div>';
-      links.forEach(l => {
-        html += `<a class="search-result-item" href="/admin/link/${encodeURIComponent(l.slug)}">
-          <span class="search-result-title">${escapeHtml(l.title)}</span>
-          <span class="search-result-meta">${l.clicks} clicks</span>
-        </a>`;
-      });
+      addGroupLabel('Links');
+      links.forEach(l => addResultLink(l.slug, l.title, l.clicks + ' clicks'));
     }
     if (events.length) {
-      html += '<div class="search-group-label">Track Events</div>';
-      events.forEach(e => {
-        html += `<div class="search-result-item search-result-static">
-          <span class="search-result-title">${escapeHtml(e.game)}</span>
-          <span class="search-result-meta">${escapeHtml(e.eventid)}</span>
-        </div>`;
-      });
+      addGroupLabel('Track Events');
+      events.forEach(e => addResultStatic(e.game, e.eventid));
     }
-    resultsEl.innerHTML = html;
   }
 
   tabs.forEach(tab => {
@@ -233,7 +260,7 @@ if (editBtn) {
     fetch('/admin/search?q=' + encodeURIComponent(q))
       .then(r => r.json())
       .then(data => { lastData = data; renderResults(); })
-      .catch(() => { resultsEl.innerHTML = '<div class="search-empty">Search failed.</div>'; });
+      .catch(() => { clearResults(); addEmpty('Search failed.'); });
   }
 
   input.addEventListener('input', () => {

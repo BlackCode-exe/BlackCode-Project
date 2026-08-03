@@ -22,7 +22,7 @@ export function makeSecurityHeaders(nonce = generateNonce()) {
       "style-src 'self'; " +
       "font-src 'self'; " +
       "img-src 'self' data:; " +
-      "connect-src 'none'; " +
+      "connect-src 'self'; " +
       "object-src 'none'; " +
       "worker-src 'none'; " +
       "frame-ancestors 'none'; " +
@@ -71,12 +71,6 @@ export function generateToken() {
 // ── Timing-safe compare ───────────────────────────────────────
 
 export async function safeCompare(a, b) {
-  // A zero-length key throws in crypto.subtle.importKey (HMAC requires a
-  // non-empty key in this runtime), which was surfacing as an uncaught 500
-  // instead of a clean 401 whenever a request arrived with no secret/header
-  // at all. Neither side can be legitimately empty in a real comparison, so
-  // short-circuiting here is safe and doesn't change the result for any
-  // genuine attempt.
   if (!a || !b) return false;
   const enc = new TextEncoder();
   const ka   = await crypto.subtle.importKey("raw", enc.encode(a), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -115,10 +109,6 @@ export async function clearRateLimit(env, ip) {
   await env.KV_BINDING.delete(`rl:${ip}`);
 }
 
-// Generic fixed-window rate limiter, reusable by any endpoint (not just admin
-// login). windowStart is stored in the value itself rather than relying on
-// KV's expirationTtl semantics, since re-putting a key resets its TTL — this
-// keeps the window boundary accurate across repeated requests within it.
 export async function checkRateLimit(env, keyPrefix, ip, max, windowSeconds) {
   const key  = `${keyPrefix}:${ip}`;
   const now  = Date.now();
@@ -134,12 +124,6 @@ export async function checkRateLimit(env, keyPrefix, ip, max, windowSeconds) {
 }
 
 // ── Cross-IP login brute-force detection ──────────────────────
-// Per-IP lockout (isRateLimited/recordFailedAttempt above) stops one IP at a
-// time. This catches a distributed attempt — many IPs each staying under
-// the per-IP threshold while collectively hammering ADMIN_PASSWORD — the
-// same class of attack the existing keyseed detector (tracking.js) already
-// covers for /api/keyseed. Separate KV keys so this never touches that
-// endpoint's counters or cooldown.
 const LOGIN_GLOBAL_UNAUTH_KEY  = "login_global_unauthorized";
 const LOGIN_ALERT_COOLDOWN_KEY = "login_alert_cooldown";
 
@@ -217,13 +201,6 @@ export async function destroySession(request, env) {
 }
 
 // ── Login CSRF (double-submit cookie, pre-session) ────────────
-// The login form itself has no session yet, so the session-bound CSRF
-// token above doesn't apply here. This uses a double-submit cookie
-// instead: the server hands out a random token in both an HttpOnly
-// cookie and a hidden form field. A cross-site request can't reproduce
-// a matching pair (SameSite=Strict keeps the cookie from riding along
-// with a cross-origin submission), so a mismatch/missing token means
-// the POST didn't originate from this login page.
 
 export function setLoginCsrfCookie(value, maxAge = 600) {
   return `login_csrf=${value}; Max-Age=${maxAge}; Path=/admin/login; HttpOnly; SameSite=Strict; Secure`;
@@ -248,11 +225,6 @@ export async function validateLoginCsrf(request, env) {
   const matches = await safeCompare(submitted, expected);
   if (!matches) return false;
 
-  // Single-use enforcement: without this, a captured login_csrf token+cookie
-  // pair could be replayed as many times as wanted within its 10-minute
-  // lifetime instead of being valid for exactly one POST. TTL matches the
-  // cookie's own Max-Age, so the "used" marker never outlives what it's
-  // guarding.
   const usedKey = `used_login_csrf:${expected}`;
   const already = await env.KV_BINDING.get(usedKey);
   if (already) return false;

@@ -1,11 +1,13 @@
 import { htmlShell, headerHtml, footerHtml } from "../utils/shell.js";
 import { escHtml } from "../utils/helpers.js";
-import { ICON_EDIT, ICON_TRASH, ICON_COPY } from "../utils/icons.js";
+import { assetVersion } from "../utils/asset-version.js";
+import { ICON_EDIT, ICON_TRASH, ICON_COPY, ICON_MENU_DOTS, ICON_QR, ICON_CLOSE } from "../utils/icons.js";
 
 export function adminStatsPage(links, request, csrf = "", nonce = "") {
   const totalLinks  = links.length;
   const totalClicks = links.reduce((sum, l) => sum + (l.clicks || 0), 0);
   const host        = request.headers.get("host");
+  const qrlogoVer   = assetVersion("qrlogo.png");
 
   const cards = links.length === 0
     ? `<div class="empty-state"><strong>No links yet</strong>Add your first link in the Create Link tab.</div>`
@@ -28,10 +30,11 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
             </div>
             <div class="link-card-menu-wrap">
               <button type="button" class="icon-btn link-card-menu-btn" data-menu="stats-${escHtml(l.slug)}" aria-label="More options" aria-haspopup="true" aria-expanded="false">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                ${ICON_MENU_DOTS}
               </button>
               <div class="link-card-dropdown" id="menu-stats-${escHtml(l.slug)}">
                 <button type="button" class="dropdown-item" data-edit="${escHtml(l.slug)}" data-target="${escHtml(l.target)}" data-title="${escHtml(l.title || "")}">${ICON_EDIT} Edit Link</button>
+                <button type="button" class="dropdown-item" data-qr-trigger data-qr-url="${fullUrl}" data-qr-title="${escHtml(title)}" data-qrlogo-version="${qrlogoVer}">${ICON_QR} Create QR Code</button>
                 <form method="POST" action="/admin/delete">
                   <input type="hidden" name="_csrf" value="${csrf}">
                   <input type="hidden" name="slug" value="${escHtml(l.slug)}">
@@ -74,6 +77,19 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
   </div>
 </div>`;
 
+  const qrModal = `
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-box modal-box-qr" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+    <div class="qr-modal-header">
+      <span class="qr-modal-title" id="qrModalTitle">QR Code</span>
+      <button type="button" class="qr-close-btn" aria-label="Close" data-close-modal="qrModal">${ICON_CLOSE}</button>
+    </div>
+    <div id="qrCanvas" style="margin:12px 0;"></div>
+    <div class="qr-label" id="qrLabel"></div>
+    <button type="button" class="btn btn-primary" id="qrDownload">Download QR</button>
+  </div>
+</div>`;
+
   const body = `
 <div class="wrapper">
   ${headerHtml({ activeNav: "link" })}
@@ -89,6 +105,7 @@ export function adminStatsPage(links, request, csrf = "", nonce = "") {
   </main>
   ${footerHtml()}
 </div>
-${editModal}`;
-  return htmlShell("Links", body, false, nonce);
+${editModal}
+${qrModal}`;
+  return htmlShell("Links", body, false, nonce, true);
 }
