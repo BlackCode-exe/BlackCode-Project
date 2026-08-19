@@ -1,3 +1,46 @@
+// ── Toast notifications ──────────────────────────────────────
+// Used for Create/Edit/Delete success (and QR generation, called directly
+// from qr.js) — an in-page popup, not a browser alert(). Server-driven
+// actions pass their message via ?msg=&type= on the post-action redirect
+// (see redirectWithToast() in handlers/links.js); this picks it up on
+// load, shows it, then strips it from the URL so a refresh/back doesn't
+// re-show it.
+
+(function () {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    container.setAttribute('aria-live', 'polite');
+    document.body.appendChild(container);
+  }
+
+  window.showToast = function (message, type) {
+    type = type === 'error' ? 'error' : 'success';
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const msg = params.get('msg');
+  if (msg) {
+    window.showToast(msg, params.get('type'));
+    params.delete('msg');
+    params.delete('type');
+    const qs = params.toString();
+    const newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+    window.history.replaceState(null, '', newUrl);
+  }
+})();
+
 // ── Sidebar / Hamburger ──────────────────────────────────────
 
 (function () {

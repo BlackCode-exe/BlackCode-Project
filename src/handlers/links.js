@@ -1,12 +1,18 @@
 import { htmlHeaders, makeSecurityHeaders, redirect, generateNonce } from "../utils/security.js";
 import { validateCsrf, getCsrfToken } from "../utils/security.js";
-import { getLink, saveLink, deleteLink, listLinks } from "../utils/kv.js";
+import { getLink, saveLink, deleteLink } from "../utils/kv.js";
 import { flash } from "../utils/helpers.js";
 import { adminAddPage } from "../pages/add.js";
-import { adminLinksPage } from "../pages/dashboard.js";
-import { getTrackLog } from "./tracking.js";
 
 const RESERVED = ["admin","api","favicon.ico","logo.png","fonts","css","js","robots.txt","qrlogo.png","BlackCode-Logo.png"];
+
+// Redirects carry the toast message via ?msg=&type= — main.js picks this
+// up on load, shows it as a toast, then strips it from the URL via
+// history.replaceState so a refresh/back doesn't re-show it.
+function redirectWithToast(path, message, type = "success") {
+  const qs = new URLSearchParams({ msg: message, type });
+  return redirect(`${path}?${qs.toString()}`);
+}
 
 export async function handleCreate(request, env) {
   if (!await validateCsrf(request, env)) {
@@ -27,7 +33,10 @@ export async function handleCreate(request, env) {
     return new Response(adminAddPage(flash("error", `"${slug}" is a reserved path.`), csrf, nonce), { headers: htmlHeaders(nonce) });
 
   await saveLink(env, slug, target, title);
-  return new Response(adminAddPage(flash("success", `Link created: /${slug}`), csrf, nonce), { headers: htmlHeaders(nonce) });
+  // Redirect back to the same Create Link page (clears the form for the
+  // next link) instead of re-rendering inline, so the success message can
+  // ride along as a toast via the query string.
+  return redirectWithToast("/admin/link/create", `Link created: /${slug}`);
 }
 
 export async function handleEdit(request, env) {
@@ -40,34 +49,39 @@ export async function handleEdit(request, env) {
   const newTarget  = (form.get("target") || "").trim();
   const newTitle   = (form.get("title") || "").trim();
   const redirectTo = form.get("redirect_to") || "";
-  const nonce      = generateNonce();
+
+  // Where to land on failure: back to the detail page if that's where the
+  // edit was submitted from (old_slug still exists, edit never happened),
+  // otherwise back to the Links list — never the Dashboard, which is what
+  // this used to fall back to regardless of where the request came from.
+  const failurePath = redirectTo === "detail" && oldSlug ? `/admin/link/${oldSlug}` : "/admin/link";
 
   if (!newSlug || !newTarget) {
-    const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
-    return new Response(adminLinksPage(links, recentTrack.entries, request, flash("error", "Both fields are required."), nonce), { headers: htmlHeaders(nonce) });
+    return redirectWithToast(failurePath, "Both fields are required.", "error");
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(newSlug)) {
-    const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
-    return new Response(adminLinksPage(links, recentTrack.entries, request, flash("error", "Slug: only letters, numbers, hyphens, underscores."), nonce), { headers: htmlHeaders(nonce) });
+    return redirectWithToast(failurePath, "Slug: only letters, numbers, hyphens, underscores.", "error");
   }
 
   const existing = await getLink(env, oldSlug);
   if (oldSlug !== newSlug) await deleteLink(env, oldSlug);
   await saveLink(env, newSlug, newTarget, newTitle, existing);
 
-  if (redirectTo === "detail") return redirect(`/admin/link/${newSlug}`);
-  const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
-  return new Response(adminLinksPage(links, recentTrack.entries, request, flash("success", `Updated: /${newSlug}`), nonce), { headers: htmlHeaders(nonce) });
+  const successPath = redirectTo === "detail" ? `/admin/link/${newSlug}` : "/admin/link";
+  return redirectWithToast(successPath, `Updated: /${newSlug}`);
 }
 
 export async function handleDelete(request, env) {
   if (!await validateCsrf(request, env)) {
     return new Response("Invalid CSRF token.", { status: 403, headers: makeSecurityHeaders() });
   }
-  const form  = await request.formData();
-  const slug  = (form.get("slug") || "").trim();
+  const form = await request.formData();
+  const slug = (form.get("slug") || "").trim();
   if (slug) await deleteLink(env, slug);
-  const nonce = generateNonce();
-  const [links, recentTrack] = await Promise.all([listLinks(env), getTrackLog(env, 5)]);
-  return new Response(adminLinksPage(links, recentTrack.entries, request, flash("success", `Deleted: /${slug}`), nonce), { headers: htmlHeaders(nonce) });
+  // Always back to the Links list — whether delete was triggered from the
+  // list itself or from a link's own detail page, that page no longer
+  // exists after deletion, so the list is the only place left to land on.
+  // Previously this always rendered the Dashboard instead, regardless of
+  // where the delete came from.
+  return redirectWithToast("/admin/link", `Deleted: /${slug}`);
 }

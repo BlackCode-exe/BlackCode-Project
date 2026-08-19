@@ -81,6 +81,7 @@
   function finish(canvas) {
     finalCanvas = canvas;
     qrCanvas.appendChild(canvas);
+    if (window.showToast) window.showToast('QR code generated', 'success');
   }
 
   document.querySelectorAll('[data-qr-trigger]').forEach(btn => {

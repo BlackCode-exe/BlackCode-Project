@@ -14,6 +14,12 @@
 #      assertion below that touches /admin/edit or /admin/delete is a
 #      direct regression test for that class of bug.
 #
+# Create/Edit/Delete now redirect back to the originating page (with a
+# ?msg=&type= toast payload) instead of rendering the Dashboard inline —
+# fixing a real UX bug where every one of those actions landed on /admin
+# no matter where they were triggered from. The Location-header checks
+# below are direct regression coverage for that.
+#
 # Uses dummy secrets via .dev.vars (created by this script, gitignored,
 # never the real Cloudflare secrets) so it never touches production data.
 set -uo pipefail
@@ -47,6 +53,19 @@ assert_body_contains() {
 assert_not_status() {
   local desc="$1" unexpected="$2" actual="$3"
   if [ "$actual" != "$unexpected" ]; then pass "$desc (status $actual, not $unexpected)"; else fail "$desc (got the unexpected $unexpected)"; fi
+}
+
+# Reads the (path-only, no query string) value of the Location header from
+# a dumped response-headers file.
+location_path() {
+  grep -i '^location:' "$1" | head -1 | sed -E 's/^[Ll]ocation: *//' | tr -d '\r' | cut -d'?' -f1
+}
+
+assert_location_path() {
+  local desc="$1" expected="$2" headers_file="$3"
+  local actual
+  actual=$(location_path "$headers_file")
+  if [ "$actual" = "$expected" ]; then pass "$desc (Location: $actual)"; else fail "$desc (expected Location path $expected, got '$actual')"; fi
 }
 
 # Reads a cookie's value out of curl's Netscape-format cookie jar.
@@ -215,51 +234,58 @@ else
   pass "extracted a session CSRF token from /admin/link/create"
 fi
 
-STATUS=$(curl -s -b "${COOKIES}" -o /tmp/create.html -w '%{http_code}' \
+# Create now redirects back to /admin/link/create (clearing the form) with
+# a toast payload in the query string, instead of rendering inline.
+curl -s -D /tmp/create-headers.txt -o /dev/null -b "${COOKIES}" \
   -X POST "${BASE}/admin/create" \
   --data-urlencode "slug=${TEST_SLUG}" \
   --data-urlencode "target=https://example.com" \
   --data-urlencode "title=Smoke Test Link" \
-  --data-urlencode "_csrf=${CSRF}")
-assert_status "create link succeeds" "200" "${STATUS}"
-assert_body_contains "create link shows success message" "Link created" "$(cat /tmp/create.html)"
+  --data-urlencode "_csrf=${CSRF}"
+STATUS=$(head -1 /tmp/create-headers.txt | grep -oE '[0-9]{3}')
+assert_status "create link redirects" "302" "${STATUS}"
+assert_location_path "create link redirects back to /admin/link/create" "/admin/link/create" /tmp/create-headers.txt
 
 # Step 4b: unified header search endpoint returns the link just created.
 BODY=$(curl -s -b "${COOKIES}" "${BASE}/admin/search?q=${TEST_SLUG}")
 assert_body_contains "/admin/search finds the created link" "${TEST_SLUG}" "${BODY}"
 
 # Step 5: regression test — an invalid edit (empty slug/target) must
-# re-render the dashboard cleanly, not throw. This is the exact path that
-# broke in production when adminLinksPage()'s signature changed but
-# links.js wasn't updated to match.
-STATUS=$(curl -s -b "${COOKIES}" -o /tmp/edit-invalid.html -w '%{http_code}' \
+# redirect cleanly, not throw. This is the exact validation path that used
+# to break in production when adminLinksPage()'s signature changed.
+# Edit/Delete redirect to /admin/link (the Links list), never /admin — the
+# actual UX bug reported: these previously always landed on the Dashboard
+# regardless of where the action was triggered from.
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" \
   -X POST "${BASE}/admin/edit" \
   --data-urlencode "old_slug=${TEST_SLUG}" \
   --data-urlencode "slug=" \
   --data-urlencode "target=" \
   --data-urlencode "_csrf=${CSRF}")
-assert_status "invalid edit (empty fields) does NOT 500" "200" "${STATUS}"
-assert_body_contains "invalid edit re-renders the dashboard" "Welcome back" "$(cat /tmp/edit-invalid.html)"
+assert_status "invalid edit (empty fields) redirects, does NOT 500" "302" "${STATUS}"
 
-# Step 6: a valid edit that redirects back to the dashboard (not the detail
-# page) — the other path that used the broken call.
-STATUS=$(curl -s -b "${COOKIES}" -o /tmp/edit-valid.html -w '%{http_code}' \
+# Step 6: a valid edit submitted without redirect_to=detail (i.e. from the
+# Links list, not the detail page) — must land back on /admin/link, not
+# /admin.
+curl -s -D /tmp/edit-headers.txt -o /dev/null -b "${COOKIES}" \
   -X POST "${BASE}/admin/edit" \
   --data-urlencode "old_slug=${TEST_SLUG}" \
   --data-urlencode "slug=${TEST_SLUG}-2" \
   --data-urlencode "target=https://example.org" \
   --data-urlencode "title=Smoke Test Link 2" \
-  --data-urlencode "_csrf=${CSRF}")
-assert_status "valid edit does NOT 500" "200" "${STATUS}"
-assert_body_contains "valid edit re-renders the dashboard" "Welcome back" "$(cat /tmp/edit-valid.html)"
+  --data-urlencode "_csrf=${CSRF}"
+STATUS=$(head -1 /tmp/edit-headers.txt | grep -oE '[0-9]{3}')
+assert_status "valid edit redirects (does NOT 500)" "302" "${STATUS}"
+assert_location_path "edit (from list) redirects to /admin/link, not /admin" "/admin/link" /tmp/edit-headers.txt
 
-# Step 7: delete (cleans up the test link too).
-STATUS=$(curl -s -b "${COOKIES}" -o /tmp/delete.html -w '%{http_code}' \
+# Step 7: delete — same regression check, must land on /admin/link.
+curl -s -D /tmp/delete-headers.txt -o /dev/null -b "${COOKIES}" \
   -X POST "${BASE}/admin/delete" \
   --data-urlencode "slug=${TEST_SLUG}-2" \
-  --data-urlencode "_csrf=${CSRF}")
-assert_status "delete link does NOT 500" "200" "${STATUS}"
-assert_body_contains "delete re-renders the dashboard" "Welcome back" "$(cat /tmp/delete.html)"
+  --data-urlencode "_csrf=${CSRF}"
+STATUS=$(head -1 /tmp/delete-headers.txt | grep -oE '[0-9]{3}')
+assert_status "delete redirects (does NOT 500)" "302" "${STATUS}"
+assert_location_path "delete redirects to /admin/link, not /admin" "/admin/link" /tmp/delete-headers.txt
 
 # Step 8: other authenticated pages still render.
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/link")
