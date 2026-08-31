@@ -4,6 +4,10 @@
 // [data-qr-trigger] button carries its own url/title/logo-version, and
 // the shared modal regenerates only when the requested url actually
 // changes from what's currently shown.
+//
+// The success toast fires on Download, not on opening the modal/generating
+// the code — opening the modal doesn't mean the user actually wants the
+// file yet, so "success" here means "you got the file", not "a QR exists".
 
 (function () {
   const qrModal    = document.getElementById('qrModal');
@@ -81,7 +85,6 @@
   function finish(canvas) {
     finalCanvas = canvas;
     qrCanvas.appendChild(canvas);
-    if (window.showToast) window.showToast('QR code generated', 'success');
   }
 
   document.querySelectorAll('[data-qr-trigger]').forEach(btn => {
@@ -101,6 +104,7 @@
       link.download = currentFile;
       link.href     = finalCanvas.toDataURL('image/png');
       link.click();
+      if (window.showToast) window.showToast('QR Code Successfully Downloaded.', 'success', 'qr');
     });
   }
 })();

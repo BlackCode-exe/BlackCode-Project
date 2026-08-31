@@ -1,10 +1,55 @@
 // ── Toast notifications ──────────────────────────────────────
-// Used for Create/Edit/Delete success (and QR generation, called directly
-// from qr.js) — an in-page popup, not a browser alert(). Server-driven
-// actions pass their message via ?msg=&type= on the post-action redirect
-// (see redirectWithToast() in handlers/links.js); this picks it up on
-// load, shows it, then strips it from the URL so a refresh/back doesn't
-// re-show it.
+// An in-page popup (not a browser alert()), top-center, auto-dismissing.
+// Server-driven actions (Create/Edit/Delete) pass their message + icon
+// kind via ?msg=&type=&icon= on the post-action redirect (see
+// redirectWithToast() in handlers/links.js); this picks it up on load,
+// shows it, then strips it from the URL so a refresh/back doesn't
+// re-show it. QR download calls window.showToast() directly from qr.js
+// (no server round-trip involved).
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const key in attrs) el.setAttribute(key, attrs[key]);
+  return el;
+}
+
+function svgIcon(paths) {
+  const svg = svgEl('svg', {
+    width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', 'stroke-width': '2',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+  });
+  paths.forEach(([tag, attrs]) => svg.appendChild(svgEl(tag, attrs)));
+  return svg;
+}
+
+// One icon per action, all rendered in the same success green via the
+// .toast-icon class — the shape communicates *which* action succeeded,
+// not just that something did.
+const TOAST_ICONS = {
+  check: () => svgIcon([
+    ['circle',   { cx: '12', cy: '12', r: '10' }],
+    ['polyline', { points: '8 12 11 15 16 9' }],
+  ]),
+  trash: () => svgIcon([
+    ['polyline', { points: '3 6 5 6 21 6' }],
+    ['path',     { d: 'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6' }],
+    ['path',     { d: 'M10 11v6' }],
+    ['path',     { d: 'M14 11v6' }],
+    ['path',     { d: 'M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2' }],
+  ]),
+  plus: () => svgIcon([
+    ['circle', { cx: '12', cy: '12', r: '10' }],
+    ['line',   { x1: '12', y1: '8', x2: '12', y2: '16' }],
+    ['line',   { x1: '8', y1: '12', x2: '16', y2: '12' }],
+  ]),
+  qr: () => svgIcon([
+    ['rect', { x: '3', y: '3', width: '7', height: '7' }],
+    ['rect', { x: '14', y: '3', width: '7', height: '7' }],
+    ['rect', { x: '3', y: '14', width: '7', height: '7' }],
+    ['rect', { x: '14', y: '14', width: '3', height: '3' }],
+  ]),
+};
 
 (function () {
   let container = document.getElementById('toastContainer');
@@ -16,11 +61,22 @@
     document.body.appendChild(container);
   }
 
-  window.showToast = function (message, type) {
+  window.showToast = function (message, type, iconKind) {
     type = type === 'error' ? 'error' : 'success';
     const toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
-    toast.textContent = message;
+
+    const kind = iconKind || (type === 'success' ? 'check' : null);
+    if (kind && TOAST_ICONS[kind]) {
+      const icon = TOAST_ICONS[kind]();
+      icon.classList.add('toast-icon');
+      toast.appendChild(icon);
+    }
+
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.appendChild(text);
+
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('show'));
     setTimeout(() => {
@@ -32,9 +88,10 @@
   const params = new URLSearchParams(window.location.search);
   const msg = params.get('msg');
   if (msg) {
-    window.showToast(msg, params.get('type'));
+    window.showToast(msg, params.get('type'), params.get('icon'));
     params.delete('msg');
     params.delete('type');
+    params.delete('icon');
     const qs = params.toString();
     const newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
     window.history.replaceState(null, '', newUrl);
@@ -87,17 +144,6 @@ document.querySelectorAll('[data-copy]').forEach(btn => {
   });
 });
 
-// ── Delete confirmation ───────────────────────────────────────
-
-document.querySelectorAll('[data-delete]').forEach(btn => {
-  btn.addEventListener('click', e => {
-    const slug = btn.dataset.delete;
-    if (!confirm('Delete /' + slug + '?')) {
-      e.preventDefault();
-    }
-  });
-});
-
 // ── Modal helpers ─────────────────────────────────────────────
 
 function openModal(id) {
@@ -119,6 +165,87 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
     closeModal(btn.dataset.closeModal);
   });
 });
+
+// ── Delete confirmation — a real in-page modal, not browser confirm() ──
+// Built once via DOM APIs (Trusted Types blocks innerHTML) and shared by
+// every [data-delete] button on the page. Clicking Delete on a link card
+// no longer submits immediately; it opens this modal, and the form is
+// only actually submitted if the user confirms in it.
+
+(function () {
+  const deleteButtons = document.querySelectorAll('[data-delete]');
+  if (deleteButtons.length === 0) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'deleteConfirmModal';
+
+  const box = document.createElement('div');
+  box.className = 'modal-box';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-labelledby', 'deleteConfirmTitle');
+
+  const title = document.createElement('div');
+  title.className = 'modal-title';
+  title.id = 'deleteConfirmTitle';
+  title.textContent = 'Delete Link';
+
+  const message = document.createElement('div');
+  message.className = 'modal-message';
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'modal-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn btn-danger';
+  cancelBtn.textContent = 'Cancel';
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.type = 'button';
+  confirmBtn.className = 'btn btn-primary';
+  confirmBtn.textContent = 'Delete';
+
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(confirmBtn);
+  box.appendChild(title);
+  box.appendChild(message);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  let pendingForm = null;
+
+  function openConfirm(form, slug) {
+    pendingForm = form;
+    message.textContent = "Delete /" + slug + "? This can't be undone.";
+    overlay.classList.add('open');
+  }
+  function closeConfirm() {
+    overlay.classList.remove('open');
+    pendingForm = null;
+  }
+
+  cancelBtn.addEventListener('click', closeConfirm);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeConfirm(); });
+  confirmBtn.addEventListener('click', () => {
+    if (pendingForm) {
+      if (pendingForm.requestSubmit) pendingForm.requestSubmit();
+      else pendingForm.submit();
+    }
+    closeConfirm();
+  });
+
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      const slug = btn.dataset.delete;
+      const form = btn.closest('form');
+      if (form) openConfirm(form, slug);
+    });
+  });
+})();
 
 // ── Dropdown menu ("...") ─────────────────────────────────────
 
