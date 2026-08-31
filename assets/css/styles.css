@@ -20,9 +20,10 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
 }
 
 /* ── Toast notifications ── */
+/* Top-center (not bottom) — sits below the sticky header (69px tall). */
 .toast-container {
   position:fixed;
-  bottom:20px;
+  top:85px;
   left:50%;
   transform:translateX(-50%);
   z-index:300;
@@ -46,15 +47,18 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
   box-shadow:0 8px 24px rgba(0,0,0,0.4);
   pointer-events:auto;
   opacity:0;
-  transform:translateY(20px);
+  transform:translateY(-20px);
   transition:opacity 0.25s ease, transform 0.25s ease;
   max-width:400px;
   width:100%;
-  text-align:center;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 .toast.show { opacity:1; transform:translateY(0); }
 .toast.toast-success { border-left-color:var(--success); }
 .toast.toast-error { border-left-color:var(--danger); }
+.toast-icon { color:var(--success); flex-shrink:0; }
 
 /* ── Layout ── */
 .wrapper { min-height:100vh; display:flex; flex-direction:column; }
@@ -336,6 +340,8 @@ input:focus { border-color:var(--accent); }
 .modal-overlay.open { display:flex; }
 .modal-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; width:100%; max-width:440px; }
 .modal-title { font-weight:700; font-size:16px; margin-bottom:20px; }
+.modal-message { color:var(--muted); font-size:13px; margin-bottom:20px; line-height:1.5; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; }
 
 /* ── Footer ── */
 footer { border-top:1px solid var(--border); padding:24px 32px; display:flex; justify-content:center; align-items:center; }
