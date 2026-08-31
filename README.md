@@ -101,3 +101,5 @@ Asset cache-busting is per-file: `scripts/gen-asset-version.js` hashes each CSS/
 
 - No 2FA/passkey on admin login — evaluated, decided not worth the complexity for a single-admin tool at this scale; revisit if that changes
 - Secret rotation is manual (no automated rotation schedule)
+
+## Ok
