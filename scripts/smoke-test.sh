@@ -14,11 +14,11 @@
 #      assertion below that touches /admin/edit or /admin/delete is a
 #      direct regression test for that class of bug.
 #
-# Create/Edit/Delete now redirect back to the originating page (with a
-# ?msg=&type= toast payload) instead of rendering the Dashboard inline —
-# fixing a real UX bug where every one of those actions landed on /admin
-# no matter where they were triggered from. The Location-header checks
-# below are direct regression coverage for that.
+# Create/Edit/Delete all redirect back to /admin/link (the Links list)
+# instead of rendering the Dashboard inline — fixing a real UX bug where
+# every one of those actions landed on /admin no matter where they were
+# triggered from. The Location-header checks below are direct regression
+# coverage for that.
 #
 # Uses dummy secrets via .dev.vars (created by this script, gitignored,
 # never the real Cloudflare secrets) so it never touches production data.
@@ -234,8 +234,9 @@ else
   pass "extracted a session CSRF token from /admin/link/create"
 fi
 
-# Create now redirects back to /admin/link/create (clearing the form) with
-# a toast payload in the query string, instead of rendering inline.
+# Create now redirects to /admin/link (the Links list) with a toast payload
+# in the query string, instead of staying on the Create page or rendering
+# inline.
 curl -s -D /tmp/create-headers.txt -o /dev/null -b "${COOKIES}" \
   -X POST "${BASE}/admin/create" \
   --data-urlencode "slug=${TEST_SLUG}" \
@@ -244,7 +245,7 @@ curl -s -D /tmp/create-headers.txt -o /dev/null -b "${COOKIES}" \
   --data-urlencode "_csrf=${CSRF}"
 STATUS=$(head -1 /tmp/create-headers.txt | grep -oE '[0-9]{3}')
 assert_status "create link redirects" "302" "${STATUS}"
-assert_location_path "create link redirects back to /admin/link/create" "/admin/link/create" /tmp/create-headers.txt
+assert_location_path "create link redirects to /admin/link" "/admin/link" /tmp/create-headers.txt
 
 # Step 4b: unified header search endpoint returns the link just created.
 BODY=$(curl -s -b "${COOKIES}" "${BASE}/admin/search?q=${TEST_SLUG}")
