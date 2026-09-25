@@ -63,3 +63,39 @@ export async function listLinks(env) {
   links.sort((a, b) => (b.created || 0) - (a.created || 0));
   return links;
 }
+
+// ── Raw file storage (self-hosted replacement for Gist raw URLs) ──────
+// Value = the raw file content itself, served byte-for-byte at
+// GET /raw/<filename>. Metadata carries only createdAt/updatedAt — the
+// content-type and extension are derived from the filename itself at
+// read time (see handlers/files.js), not stored, so there's exactly one
+// source of truth for what extension a file has.
+const RAW_FILE_PREFIX = "raw_file:";
+
+export async function saveRawFile(env, filename, content, existing = null) {
+  const now = Date.now();
+  await env.KV_BINDING.put(`${RAW_FILE_PREFIX}${filename}`, content, {
+    metadata: { createdAt: existing?.createdAt || now, updatedAt: now },
+  });
+}
+
+export async function getRawFile(env, filename) {
+  const { value, metadata } = await env.KV_BINDING.getWithMetadata(`${RAW_FILE_PREFIX}${filename}`);
+  if (value === null) return null;
+  return { content: value, ...(metadata || {}) };
+}
+
+export async function deleteRawFile(env, filename) {
+  await env.KV_BINDING.delete(`${RAW_FILE_PREFIX}${filename}`);
+}
+
+// Listing only reads KV metadata via list() — never fetches every file's
+// content — same pattern as the tracking/keyseed logs (see
+// handlers/tracking.js), since file content can be arbitrarily large and
+// the admin list page only needs the filename + timestamps.
+export async function listRawFiles(env) {
+  const { keys } = await env.KV_BINDING.list({ prefix: RAW_FILE_PREFIX });
+  return keys
+    .map(k => ({ filename: k.name.slice(RAW_FILE_PREFIX.length), ...(k.metadata || {}) }))
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}

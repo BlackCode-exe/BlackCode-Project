@@ -1,4 +1,4 @@
-import { ICON_HOME, ICON_ADD, ICON_STATS, ICON_LOGOUT, ICON_ACTIVITY, ICON_SEARCH } from "./icons.js";
+import { ICON_HOME, ICON_ADD, ICON_STATS, ICON_LOGOUT, ICON_ACTIVITY, ICON_SEARCH, ICON_FILE } from "./icons.js";
 import { assetVersion } from "./asset-version.js";
 
 export function sidebarHtml(active) {
@@ -7,6 +7,7 @@ export function sidebarHtml(active) {
     { id: "create",   label: "Create Link", href: "/admin/link/create", icon: ICON_ADD      },
     { id: "link",     label: "Links",       href: "/admin/link",        icon: ICON_STATS    },
     { id: "tracking", label: "Tracking",    href: "/admin/tracking",    icon: ICON_ACTIVITY },
+    { id: "files",    label: "Raw Files",   href: "/admin/files",       icon: ICON_FILE     },
   ];
   return `
 <div class="sidebar-overlay" id="sidebarOverlay"></div>

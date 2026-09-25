@@ -236,6 +236,18 @@ input[type="text"],input[type="url"],input[type="password"] {
 input:focus { border-color:var(--accent); }
 .input-hint { margin-top:6px; font-size:12px; color:var(--muted); }
 
+/* Raw file content editor — plain textarea styled to match the text inputs
+   above; .code-textarea is a monospace variant for html/txt/md content,
+   which reads more like a file editor than a prose field. */
+textarea {
+  width:100%; background:var(--bg); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font);
+  font-size:14px; padding:10px 14px; outline:none; transition:border-color 0.15s;
+  resize:vertical; min-height:200px; line-height:1.5;
+}
+textarea:focus { border-color:var(--accent); }
+.code-textarea { font-family:'Courier New', Courier, monospace; font-size:13px; }
+
 /* ── Buttons ── */
 .btn {
   display:inline-flex; align-items:center; gap:8px; padding:10px 20px;

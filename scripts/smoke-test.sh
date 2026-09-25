@@ -20,6 +20,12 @@
 # triggered from. The Location-header checks below are direct regression
 # coverage for that.
 #
+# The Raw Files section near the end covers the self-hosted Gist
+# replacement: create/edit/delete plus the public GET /raw/<filename>
+# endpoint (content, CORS header, and Content-Type), and confirms a
+# disallowed extension is rejected server-side, not just by the form's
+# pattern= attribute.
+#
 # Uses dummy secrets via .dev.vars (created by this script, gitignored,
 # never the real Cloudflare secrets) so it never touches production data.
 set -uo pipefail
@@ -31,6 +37,7 @@ COOKIES=$(mktemp)
 ADMIN_PW="smoke-test-dummy-password"
 ADMIN_USER="smoke-test-dummy-user"
 TEST_SLUG="smoketest-link-$$"
+TEST_FILE="smoketest-file-$$.txt"
 
 pass() { echo "  PASS: $1"; }
 fail() { echo "  FAIL: $1"; FAILURES=$((FAILURES + 1)); }
@@ -225,7 +232,9 @@ assert_body_contains "dashboard renders after login" "Welcome back" "${BODY}"
 
 # Step 4: grab a session-bound CSRF token from a real admin page (this is a
 # different token from login_csrf — it's tied to the session, not the
-# pre-login double-submit cookie) and create a throwaway test link.
+# pre-login double-submit cookie) and create a throwaway test link. This
+# same token is valid for every other form in this session too (Raw Files
+# included) — it's bound to the session, not to any one form.
 curl -s -b "${COOKIES}" -o /tmp/add.html "${BASE}/admin/link/create"
 CSRF=$(extract_csrf /tmp/add.html)
 if [ -z "${CSRF}" ]; then
@@ -295,8 +304,73 @@ assert_status "/admin/link renders" "200" "${STATUS}"
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/tracking")
 assert_status "/admin/tracking renders" "200" "${STATUS}"
 
-# Step 9: logout, then confirm the session is actually gone (not just a
-# client-side cookie clear — the KV session entry must be invalidated).
+echo ""
+echo "── Raw Files flow (replaces Gist) ─────────────"
+
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/files")
+assert_status "/admin/files renders" "200" "${STATUS}"
+
+# Create.
+curl -s -D /tmp/rf-create-headers.txt -o /dev/null -b "${COOKIES}" \
+  -X POST "${BASE}/admin/files/create" \
+  --data-urlencode "filename=${TEST_FILE}" \
+  --data-urlencode "content=hello from smoke test" \
+  --data-urlencode "_csrf=${CSRF}"
+STATUS=$(head -1 /tmp/rf-create-headers.txt | grep -oE '[0-9]{3}')
+assert_status "create raw file redirects" "302" "${STATUS}"
+assert_location_path "create raw file redirects to /admin/files" "/admin/files" /tmp/rf-create-headers.txt
+
+# A disallowed extension must be rejected server-side (rendered inline with
+# an error, not redirected) — not just blocked by the form's pattern=
+# attribute, which a direct POST bypasses entirely.
+BODY=$(curl -s -b "${COOKIES}" \
+  -X POST "${BASE}/admin/files/create" \
+  --data-urlencode "filename=smoketest-bad-$$.exe" \
+  --data-urlencode "content=nope" \
+  --data-urlencode "_csrf=${CSRF}")
+assert_body_contains "disallowed extension is rejected server-side" "Filename must be" "${BODY}"
+
+# Public serving — no auth, wide-open CORS (this is the whole point: it
+# replaces the Gist raw URL, so it has to actually work when fetched
+# cross-origin from arbitrary HTML pages and from the Ren'Py client).
+curl -s -D /tmp/rf-serve-headers.txt -o /tmp/rf-serve-body.txt "${BASE}/raw/${TEST_FILE}"
+BODY=$(cat /tmp/rf-serve-body.txt)
+assert_body_contains "public /raw/<file> serves the content" "hello from smoke test" "${BODY}"
+assert_header_present "public /raw/<file> has CORS header" "Access-Control-Allow-Origin" /tmp/rf-serve-headers.txt
+if grep -qi "^content-type: text/plain" /tmp/rf-serve-headers.txt; then pass "raw .txt file gets text/plain Content-Type"; else fail "raw .txt file gets text/plain Content-Type"; fi
+
+# Edit — content update must be reflected on the same URL immediately
+# (short cache window, not a permanent/versioned one like static assets).
+curl -s -D /tmp/rf-edit-headers.txt -o /dev/null -b "${COOKIES}" \
+  -X POST "${BASE}/admin/files/edit" \
+  --data-urlencode "old_filename=${TEST_FILE}" \
+  --data-urlencode "filename=${TEST_FILE}" \
+  --data-urlencode "content=updated content" \
+  --data-urlencode "_csrf=${CSRF}"
+STATUS=$(head -1 /tmp/rf-edit-headers.txt | grep -oE '[0-9]{3}')
+assert_status "edit raw file redirects (does NOT 500)" "302" "${STATUS}"
+assert_location_path "edit raw file redirects to /admin/files" "/admin/files" /tmp/rf-edit-headers.txt
+
+BODY=$(curl -s "${BASE}/raw/${TEST_FILE}")
+assert_body_contains "public /raw/<file> reflects the edit" "updated content" "${BODY}"
+
+# Delete.
+curl -s -D /tmp/rf-delete-headers.txt -o /dev/null -b "${COOKIES}" \
+  -X POST "${BASE}/admin/files/delete" \
+  --data-urlencode "filename=${TEST_FILE}" \
+  --data-urlencode "_csrf=${CSRF}"
+STATUS=$(head -1 /tmp/rf-delete-headers.txt | grep -oE '[0-9]{3}')
+assert_status "delete raw file redirects (does NOT 500)" "302" "${STATUS}"
+assert_location_path "delete raw file redirects to /admin/files" "/admin/files" /tmp/rf-delete-headers.txt
+
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/raw/${TEST_FILE}")
+assert_status "deleted raw file now 404s publicly" "404" "${STATUS}"
+
+echo ""
+echo "── Logout ──────────────────────────────────────"
+
+# Logout, then confirm the session is actually gone (not just a client-side
+# cookie clear — the KV session entry must be invalidated).
 STATUS=$(curl -s -c "${COOKIES}" -b "${COOKIES}" -o /dev/null -w '%{http_code}' "${BASE}/admin/logout")
 assert_status "logout redirects" "302" "${STATUS}"
 

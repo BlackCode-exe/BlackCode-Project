@@ -1,11 +1,12 @@
 import { htmlHeaders, redirect, generateNonce } from "../utils/security.js";
 import { getCsrfToken } from "../utils/security.js";
-import { getLink, listLinks } from "../utils/kv.js";
+import { getLink, listLinks, getRawFile, listRawFiles } from "../utils/kv.js";
 import { adminLinksPage } from "../pages/dashboard.js";
 import { adminAddPage } from "../pages/add.js";
 import { adminStatsPage } from "../pages/stats.js";
 import { adminLinkDetailPage } from "../pages/detail.js";
 import { adminTrackingPage, adminKeyseedLogPage, adminTrackStatsPage } from "../pages/tracking.js";
+import { adminFilesListPage, adminFilesCreatePage, adminFilesEditPage } from "../pages/files.js";
 import { getTrackLog, getKeyseedLog, computeStats } from "./tracking.js";
 
 export async function handleDashboard(request, env) {
@@ -51,6 +52,29 @@ export async function handleTrackingStats(request, env) {
   const { entries, hasMore } = await getTrackLog(env);
   const nonce = generateNonce();
   return new Response(adminTrackStatsPage(computeStats(entries), nonce, hasMore), { headers: htmlHeaders(nonce) });
+}
+
+// ── Raw Files admin pages ────────────────────────────────────────────
+export async function handleFilesList(request, env) {
+  const [files, csrf] = await Promise.all([listRawFiles(env), getCsrfToken(request, env)]);
+  const nonce = generateNonce();
+  const host  = request.headers.get("host");
+  return new Response(adminFilesListPage(files, host, csrf || "", nonce), { headers: htmlHeaders(nonce) });
+}
+
+export async function handleFilesCreateForm(request, env) {
+  const csrf  = await getCsrfToken(request, env);
+  const nonce = generateNonce();
+  return new Response(adminFilesCreatePage("", csrf || "", nonce), { headers: htmlHeaders(nonce) });
+}
+
+export async function handleFilesEditForm(request, env, rawFilename) {
+  const filename = decodeURIComponent(rawFilename);
+  const file = await getRawFile(env, filename);
+  if (!file) return redirect("/admin/files");
+  const csrf  = await getCsrfToken(request, env) || "";
+  const nonce = generateNonce();
+  return new Response(adminFilesEditPage(filename, file, csrf, nonce), { headers: htmlHeaders(nonce) });
 }
 
 // GET /admin/search?q=... — powers the unified header search box. Already

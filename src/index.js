@@ -2,9 +2,10 @@ import { makeSecurityHeaders, htmlHeaders, redirect, isAuthenticated, generateNo
 import { assetVersion } from "./utils/asset-version.js";
 import { getLink, recordClick } from "./utils/kv.js";
 import { handleLogin, handleLogout } from "./handlers/auth.js";
-import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking, handleTrackingKeyseedLogs, handleTrackingStats, handleSearch } from "./handlers/admin.js";
+import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking, handleTrackingKeyseedLogs, handleTrackingStats, handleSearch, handleFilesList, handleFilesCreateForm, handleFilesEditForm } from "./handlers/admin.js";
 import { handleCreate, handleEdit, handleDelete } from "./handlers/links.js";
 import { handleTrack, handleKeyseed, handleTrackLogs, handleKeyseedLogs, handleTrackStats } from "./handlers/tracking.js";
+import { handleFilesCreate, handleFilesUpdate, handleFilesDelete, handleRawFile } from "./handlers/files.js";
 import { trespassGatePage } from "./pages/gate.js";
 
 export default {
@@ -79,13 +80,33 @@ export default {
       if (pathname === "/admin/tracking/keyseed" && method === "GET")    return handleTrackingKeyseedLogs(request, env);
       if (pathname === "/admin/tracking/stats" && method === "GET")      return handleTrackingStats(request, env);
 
+      // Raw Files admin — exact-match routes before the /admin/files/<filename>
+      // regex below, same reasoning as the /admin/link/create-vs-detail
+      // ordering further down.
+      if (pathname === "/admin/files" && method === "GET")               return handleFilesList(request, env);
+      if (pathname === "/admin/files/create" && method === "GET")        return handleFilesCreateForm(request, env);
+      if (pathname === "/admin/files/create" && method === "POST")       return handleFilesCreate(request, env);
+      if (pathname === "/admin/files/edit" && method === "POST")         return handleFilesUpdate(request, env);
+      if (pathname === "/admin/files/delete" && method === "POST")       return handleFilesDelete(request, env);
+
       // Must come after the exact-match routes above (e.g. /admin/link/create),
       // since this regex would otherwise also match those and capture the
       // wrong "slug".
       const detailMatch = pathname.match(/^\/admin\/link\/(.+)$/);
       if (detailMatch && method === "GET") return handleDetail(request, env, detailMatch[1]);
 
+      // Same ordering rule as above, for the Raw Files edit page.
+      const fileEditMatch = pathname.match(/^\/admin\/files\/(.+)$/);
+      if (fileEditMatch && method === "GET") return handleFilesEditForm(request, env, fileEditMatch[1]);
+
       return redirect("/admin");
+    }
+
+    // ── Raw files (public, replaces Gist raw URLs) ─────────────
+    // No auth guard — deliberately public, same trust level as a Gist raw
+    // link. See handlers/files.js for the CORS/Cache-Control reasoning.
+    if (pathname.startsWith("/raw/") && method === "GET") {
+      return handleRawFile(request, env, decodeURIComponent(pathname.slice(5)));
     }
 
     // ── Root page ─────────────────────────────────────────────

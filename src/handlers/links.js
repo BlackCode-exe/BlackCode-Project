@@ -4,7 +4,12 @@ import { getLink, saveLink, deleteLink } from "../utils/kv.js";
 import { flash } from "../utils/helpers.js";
 import { adminAddPage } from "../pages/add.js";
 
-const RESERVED = ["admin","api","favicon.ico","logo.png","fonts","css","js","robots.txt","qrlogo.png","BlackCode-Logo.png"];
+// "raw" added alongside the existing reserved paths — a short link literally
+// named "raw" would sit right next to the new /raw/<filename> public raw
+// file route and only invite confusion, even though the two never actually
+// collide at the routing level (index.js only intercepts /raw/<something>,
+// not the bare /raw slug).
+const RESERVED = ["admin","api","favicon.ico","logo.png","fonts","css","js","robots.txt","qrlogo.png","BlackCode-Logo.png","raw"];
 
 // Redirects carry the toast message via ?msg=&type=&icon= — main.js picks
 // this up on load, shows it, then strips it from the URL via

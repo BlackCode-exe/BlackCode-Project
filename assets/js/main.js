@@ -168,9 +168,12 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
 
 // ── Delete confirmation — a real in-page modal, not browser confirm() ──
 // Built once via DOM APIs (Trusted Types blocks innerHTML) and shared by
-// every [data-delete] button on the page. Clicking Delete on a link card
-// no longer submits immediately; it opens this modal, and the form is
-// only actually submitted if the user confirms in it.
+// every [data-delete] button on the page, regardless of what kind of
+// thing is being deleted (a link, a raw file, ...). The modal title is
+// read per-click from the button's optional data-delete-label attribute
+// (falling back to "Delete Link" for existing buttons that don't set
+// one), so "Delete Raw File" doesn't show up saying "Delete Link" just
+// because this modal used to only ever delete links.
 
 (function () {
   const deleteButtons = document.querySelectorAll('[data-delete]');
@@ -217,8 +220,9 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
 
   let pendingForm = null;
 
-  function openConfirm(form, slug) {
+  function openConfirm(form, slug, label) {
     pendingForm = form;
+    title.textContent = label || 'Delete Link';
     message.textContent = "Delete /" + slug + "? This can't be undone.";
     overlay.classList.add('open');
   }
@@ -240,9 +244,10 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
   deleteButtons.forEach(btn => {
     btn.addEventListener('click', e => {
       e.preventDefault();
-      const slug = btn.dataset.delete;
-      const form = btn.closest('form');
-      if (form) openConfirm(form, slug);
+      const slug  = btn.dataset.delete;
+      const label = btn.dataset.deleteLabel;
+      const form  = btn.closest('form');
+      if (form) openConfirm(form, slug, label);
     });
   });
 })();
