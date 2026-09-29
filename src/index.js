@@ -6,6 +6,7 @@ import { handleDashboard, handleAdd, handleStats, handleDetail, handleTracking, 
 import { handleCreate, handleEdit, handleDelete } from "./handlers/links.js";
 import { handleTrack, handleKeyseed, handleTrackLogs, handleKeyseedLogs, handleTrackStats } from "./handlers/tracking.js";
 import { handleFilesCreate, handleFilesUpdate, handleFilesDelete, handleRawFile } from "./handlers/files.js";
+import { handleRatingsGet, handleRatingsPost, handleRatingOptions } from "./handlers/rating.js";
 import { trespassGatePage } from "./pages/gate.js";
 
 export default {
@@ -60,6 +61,16 @@ export default {
     if (pathname === "/api/logs" && method === "GET")          return handleTrackLogs(request, env);
     if (pathname === "/api/keyseed-logs" && method === "GET")  return handleKeyseedLogs(request, env);
     if (pathname === "/api/stats" && method === "GET")         return handleTrackStats(request, env);
+
+    // ── Rating API (catalog.html star widget) ─────────────────
+    // Public, no auth — the OPTIONS branches exist purely for the CORS
+    // preflight a cross-origin POST with a JSON body triggers; see
+    // handlers/rating.js for why GET doesn't strictly need one but gets
+    // the same headers anyway for consistency.
+    if (pathname === "/api/ratings" && method === "OPTIONS")   return handleRatingOptions();
+    if (pathname === "/api/rate" && method === "OPTIONS")      return handleRatingOptions();
+    if (pathname === "/api/ratings" && method === "GET")       return handleRatingsGet(request, env);
+    if (pathname === "/api/rate" && method === "POST")         return handleRatingsPost(request, env);
 
     // ── Auth routes ───────────────────────────────────────────
     if (pathname === "/admin/login")  return handleLogin(request, env, ctx);

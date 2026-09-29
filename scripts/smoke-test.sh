@@ -367,6 +367,51 @@ STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/raw/${TEST_FILE}")
 assert_status "deleted raw file now 404s publicly" "404" "${STATUS}"
 
 echo ""
+echo "── Rating API (catalog.html star widget) ──────"
+
+TEST_GAME="smoketest-game-$$"
+
+# A never-voted id must come back as a real zero entry, not omitted/error —
+# the widget always needs exactly one result per id it asked for.
+BODY=$(curl -s "${BASE}/api/ratings?ids=${TEST_GAME}")
+assert_body_contains "unknown game-id returns a zero entry, not omitted" "\"avg\":0" "${BODY}"
+
+# CORS preflight — a POST with a JSON body is not a "simple request", so
+# the browser sends OPTIONS first. Without the right headers here, the
+# real POST below would never even be attempted by a real browser.
+curl -s -D /tmp/rate-options-headers.txt -o /dev/null -X OPTIONS "${BASE}/api/rate"
+assert_header_present "OPTIONS /api/rate has CORS header" "Access-Control-Allow-Origin" /tmp/rate-options-headers.txt
+
+# Invalid input rejected server-side.
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":9}")
+assert_status "stars out of 1-5 range is rejected" "400" "${STATUS}"
+
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"has a space\",\"stars\":4}")
+assert_status "malformed game-id is rejected" "400" "${STATUS}"
+
+# First vote from this IP — a genuinely new vote, count goes 0 -> 1.
+BODY=$(curl -s -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":4}")
+assert_body_contains "first vote is accepted" "\"status\":\"ok\"" "${BODY}"
+assert_body_contains "first vote sets count to 1" "\"count\":1" "${BODY}"
+
+BODY=$(curl -s "${BASE}/api/ratings?ids=${TEST_GAME}")
+assert_body_contains "GET /api/ratings reflects the vote just cast" "\"avg\":4" "${BODY}"
+
+# Same IP changing its vote — count must NOT increase a second time (the
+# whole point of the per-IP dedup: one IP = one vote toward the average,
+# no matter how many times it re-submits).
+BODY=$(curl -s -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":2}")
+assert_body_contains "changing the same IP's vote is accepted" "\"status\":\"ok\"" "${BODY}"
+assert_body_contains "changing a vote does NOT increment count" "\"count\":1" "${BODY}"
+
+BODY=$(curl -s "${BASE}/api/ratings?ids=${TEST_GAME}")
+assert_body_contains "average reflects the changed vote (2), not the old one (4)" "\"avg\":2" "${BODY}"
+
+echo ""
 echo "── Logout ──────────────────────────────────────"
 
 # Logout, then confirm the session is actually gone (not just a client-side

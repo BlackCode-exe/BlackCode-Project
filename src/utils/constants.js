@@ -30,3 +30,26 @@ export const ADMIN_API_RATE_WINDOW = 60;
 export const LOGIN_GLOBAL_UNAUTH_WINDOW    = 300;  // 5 minutes
 export const LOGIN_GLOBAL_UNAUTH_THRESHOLD = 15;
 export const LOGIN_ALERT_COOLDOWN_SECONDS  = 900;  // don't re-alert more than once per 15 min
+
+// ── Rating (catalog.html star widget) ──────────────────────────
+// /api/ratings is read-only and public, called once per catalog.html page
+// load (one batched request for every card on the page) — generous limit,
+// this is just normal traffic.
+export const RATINGS_GET_RATE_MAX    = 30;
+export const RATINGS_GET_RATE_WINDOW = 60;
+
+// /api/rate — a real person genuinely changing their mind a few times in a
+// row is still well under this; a crude spam script hammering the endpoint
+// is not.
+export const RATING_RATE_MAX    = 10;
+export const RATING_RATE_WINDOW = 60;
+
+// How long one IP's vote "sticks" to a game before it's treated as a fresh,
+// never-voted IP again. Not a security boundary (see handlers/rating.js) —
+// just long enough that casual reconnects/IP churn don't let the same
+// person immediately double up, without pretending to be permanent.
+export const RATING_VOTE_TTL = 60 * 60 * 24 * 30; // 30 days
+
+// GET /api/ratings?ids=a,b,c — hard cap so a request can't be crafted to
+// force an unbounded number of KV reads in one call.
+export const MAX_RATING_IDS_PER_REQUEST = 50;
