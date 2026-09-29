@@ -45,7 +45,7 @@ const ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 // players is never visibly broken (like a >5.0 average) even if it happens.
 function avgOf(sum, count) {
   if (count <= 0) return 0;
-  const avg = Math.round((sum / count) * 10) / 10;
+  const avg = Math.round((sum / count) * 100) / 100;
   return Math.min(5, Math.max(0, avg));
 }
 
