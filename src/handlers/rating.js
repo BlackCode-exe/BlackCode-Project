@@ -34,8 +34,19 @@ function jsonResponse(obj, status = 200) {
 // as a KV key segment with no extra escaping needed.
 const ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 
+// Defensive clamp: the displayed average must never read outside 0.0-5.0,
+// no matter what sum/count end up holding. Under normal (non-racing)
+// requests the arithmetic in handleRatingsPost never produces an
+// out-of-range value on its own — but KV is only eventually consistent
+// (the same characteristic behind the admin Raw Files "Last Updated" lag),
+// so two requests for the same id landing on different, not-yet-synced
+// edges could in principle read stale data and drift the numbers. This
+// clamp doesn't prevent that drift, it just guarantees the number shown to
+// players is never visibly broken (like a >5.0 average) even if it happens.
 function avgOf(sum, count) {
-  return count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
+  if (count <= 0) return 0;
+  const avg = Math.round((sum / count) * 10) / 10;
+  return Math.min(5, Math.max(0, avg));
 }
 
 // IP is hashed before it's ever written to KV — the vote key only needs to
@@ -49,7 +60,8 @@ async function hashIp(ip) {
 // Batch read — one request for a whole page of catalog cards instead of
 // one request per card. A never-voted id comes back as {avg:0,count:0},
 // not an error and not omitted, so the widget always gets exactly one
-// entry per id it asked for.
+// entry per id it asked for. This is always the aggregate across every
+// voter's IP — there is no per-viewer view of this endpoint.
 export async function handleRatingsGet(request, env) {
   const clientIp = getClientIp(request);
   const allowed  = await checkRateLimit(env, "rl:ratings-get", clientIp, RATINGS_GET_RATE_MAX, RATINGS_GET_RATE_WINDOW);
@@ -74,12 +86,18 @@ export async function handleRatingsGet(request, env) {
 }
 
 // ── POST /api/rate — { id, stars } ──────────────────────────────
-// One IP contributes exactly one vote to a game's average: re-submitting
-// moves that same vote (sum adjusts, count does not change) instead of
-// stacking a new one every click. This is the deliberate anti-spam
-// mitigation discussed — not bulletproof against someone deliberately
-// rotating IPs, but it neutralizes the trivial case (spam-clicking stars)
-// which was the actual ask.
+// stars is 1-5 for a normal vote/re-vote, or 0 to undo (retract this IP's
+// vote entirely, as if it had never voted).
+//
+// One IP contributes exactly one vote to a game's average:
+//   - first vote (1-5): count +1, sum += stars
+//   - changing that vote (1-5 again): count unchanged, sum swaps old for new
+//   - undo (0): count -1, sum -= old vote, vote record deleted — a
+//     following vote from the same IP is then a fresh "first vote" again
+//
+// Anti-spam note: this dedups by IP, not bulletproof against someone
+// deliberately rotating IPs — it neutralizes the trivial case (spam-
+// clicking stars), which was the actual ask, not perfect fraud-proofing.
 export async function handleRatingsPost(request, env) {
   const clientIp = getClientIp(request);
   const allowed  = await checkRateLimit(env, "rl:rate", clientIp, RATING_RATE_MAX, RATING_RATE_WINDOW);
@@ -92,7 +110,7 @@ export async function handleRatingsPost(request, env) {
   const stars = Number(body.stars);
 
   if (!ID_RE.test(id)) return jsonResponse({ status: "invalid_id" }, 400);
-  if (!Number.isInteger(stars) || stars < 1 || stars > 5) return jsonResponse({ status: "invalid_stars" }, 400);
+  if (!Number.isInteger(stars) || stars < 0 || stars > 5) return jsonResponse({ status: "invalid_stars" }, 400);
 
   const ipHash  = await hashIp(clientIp);
   const voteKey = `rating_vote:${id}:${ipHash}`;
@@ -105,6 +123,19 @@ export async function handleRatingsPost(request, env) {
 
   let sum   = current?.sum   || 0;
   let count = current?.count || 0;
+
+  if (stars === 0) {
+    // Undo — only does something if this IP actually had a vote on record.
+    if (existingVote) {
+      sum   = Math.max(0, sum - existingVote.stars);
+      count = Math.max(0, count - 1);
+      await Promise.all([
+        env.KV_BINDING.put(dataKey, JSON.stringify({ sum, count })),
+        env.KV_BINDING.delete(voteKey),
+      ]);
+    }
+    return jsonResponse({ status: "ok", avg: avgOf(sum, count), count }, 200);
+  }
 
   if (existingVote) {
     // Changing an existing vote — count does not move.

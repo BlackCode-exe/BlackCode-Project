@@ -411,6 +411,34 @@ assert_body_contains "changing a vote does NOT increment count" "\"count\":1" "$
 BODY=$(curl -s "${BASE}/api/ratings?ids=${TEST_GAME}")
 assert_body_contains "average reflects the changed vote (2), not the old one (4)" "\"avg\":2" "${BODY}"
 
+# Undo (stars=0) — retracts this IP's vote entirely. count must drop back
+# to 0, not just the average resetting.
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":-1}")
+assert_status "negative stars is rejected" "400" "${STATUS}"
+
+BODY=$(curl -s -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":0}")
+assert_body_contains "undo (stars=0) is accepted" "\"status\":\"ok\"" "${BODY}"
+assert_body_contains "undo brings count back to 0" "\"count\":0" "${BODY}"
+
+BODY=$(curl -s "${BASE}/api/ratings?ids=${TEST_GAME}")
+assert_body_contains "after undo, GET shows a fresh zero entry again" "\"avg\":0" "${BODY}"
+assert_body_contains "after undo, count is 0 (not omitted, not negative)" "\"count\":0" "${BODY}"
+
+# Undoing again (nothing left to undo) must be a harmless no-op, not an
+# error and not a negative count.
+BODY=$(curl -s -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":0}")
+assert_body_contains "undoing with nothing to undo is a harmless no-op" "\"count\":0" "${BODY}"
+
+# After the undo, the same IP voting again is treated as a genuinely new
+# vote (count goes 0 -> 1), not as "changing" a vote that no longer exists.
+BODY=$(curl -s -X POST "${BASE}/api/rate" \
+  -H 'Content-Type: application/json' -d "{\"id\":\"${TEST_GAME}\",\"stars\":3}")
+assert_body_contains "voting again after undo starts a fresh vote (count 1)" "\"count\":1" "${BODY}"
+assert_body_contains "voting again after undo reflects the new value (3)" "\"avg\":3" "${BODY}"
+
 echo ""
 echo "── Logout ──────────────────────────────────────"
 
