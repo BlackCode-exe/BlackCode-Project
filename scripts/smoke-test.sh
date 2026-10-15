@@ -26,6 +26,13 @@
 # disallowed extension is rejected server-side, not just by the form's
 # pattern= attribute.
 #
+# The "Tracking/keyseed log escaping" section is a direct regression test
+# for a real stored-XSS bug: /api/logs and /api/keyseed-logs used to
+# interpolate user-controlled fields (game, eventid, X-Bc-Script, ...)
+# into a <pre> block with zero escaping. X-Bc-Script in particular needed
+# no valid secret at all to reach the log (it's recorded on every outcome,
+# including UNAUTHORIZED), making it the easier of the two to exploit.
+#
 # Uses dummy secrets via .dev.vars (created by this script, gitignored,
 # never the real Cloudflare secrets) so it never touches production data.
 set -uo pipefail
@@ -55,6 +62,11 @@ assert_header_present() {
 assert_body_contains() {
   local desc="$1" needle="$2" body="$3"
   if echo "$body" | grep -qF "$needle"; then pass "$desc"; else fail "$desc — body did not contain expected content"; fi
+}
+
+assert_body_not_contains() {
+  local desc="$1" needle="$2" body="$3"
+  if echo "$body" | grep -qF "$needle"; then fail "$desc — body contained the raw, unescaped payload"; else pass "$desc"; fi
 }
 
 assert_not_status() {
@@ -303,6 +315,35 @@ assert_status "/admin/link renders" "200" "${STATUS}"
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "${COOKIES}" "${BASE}/admin/tracking")
 assert_status "/admin/tracking renders" "200" "${STATUS}"
+
+echo ""
+echo "── Tracking/keyseed log escaping (XSS fix) ────"
+
+XSS_PAYLOAD="<script>alert(1)</script>"
+XSS_MARKER="smoketest-xss-$$"
+
+# /api/track: inject a <script> tag via the "game" field (needs a valid
+# SECRET_KEY to even be accepted), then confirm /api/logs renders it
+# escaped, not as a live tag.
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/api/track" \
+  -H 'Content-Type: application/json' \
+  -d "{\"secret\":\"smoke-test-dummy-secret\",\"game\":\"${XSS_MARKER}${XSS_PAYLOAD}\",\"eventid\":\"xss_test\"}")
+assert_status "/api/track with valid secret is accepted" "200" "${STATUS}"
+
+BODY=$(curl -s -H 'X-Bc-Auth: smoke-test-dummy-logs-password' "${BASE}/api/logs")
+assert_body_contains "/api/logs escapes the <script> tag in game field" "${XSS_MARKER}&lt;script&gt;" "${BODY}"
+assert_body_not_contains "/api/logs does not leak a raw, unescaped <script> tag" "${XSS_MARKER}${XSS_PAYLOAD}" "${BODY}"
+
+# /api/keyseed: X-Bc-Script is explicitly unvalidated and is logged on
+# EVERY outcome including UNAUTHORIZED — this doesn't even need a valid
+# SEED_AUTH_KEY to land in the log, which is exactly what made it the
+# easier of the two fields to exploit.
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -H "X-Bc-Script: ${XSS_MARKER}${XSS_PAYLOAD}" "${BASE}/api/keyseed")
+assert_status "/api/keyseed with no auth (X-Bc-Script injection attempt) is unauthorized" "401" "${STATUS}"
+
+BODY=$(curl -s -H 'X-Bc-Auth: smoke-test-dummy-logs-password' "${BASE}/api/keyseed-logs")
+assert_body_contains "/api/keyseed-logs escapes the <script> tag in X-Bc-Script" "${XSS_MARKER}&lt;script&gt;" "${BODY}"
+assert_body_not_contains "/api/keyseed-logs does not leak a raw, unescaped <script> tag" "${XSS_MARKER}${XSS_PAYLOAD}" "${BODY}"
 
 echo ""
 echo "── Raw Files flow (replaces Gist) ─────────────"

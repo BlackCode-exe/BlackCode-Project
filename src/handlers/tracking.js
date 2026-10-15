@@ -1,4 +1,5 @@
 import { safeCompare, getClientIp, checkRateLimit } from "../utils/security.js";
+import { escHtml } from "../utils/helpers.js";
 import { TRACK_RATE_MAX, TRACK_RATE_WINDOW, KEYSEED_RATE_MAX, KEYSEED_RATE_WINDOW, ADMIN_API_RATE_MAX, ADMIN_API_RATE_WINDOW } from "../utils/constants.js";
 
 const TRACK_PREFIX   = "cheat_track_log:";
@@ -176,7 +177,11 @@ export async function handleTrack(request, env, ctx) {
 // key (e.g. "scripts", "toolkit"). Purely a label for admin-side tracking —
 // not validated, not part of the auth decision. Logged on every outcome
 // (OK/UNAUTHORIZED/RATE_LIMITED) as `file` so the Keyseed Logs table can
-// show which file each request was for.
+// show which file each request was for. Because it's logged even on
+// UNAUTHORIZED (no valid secret needed at all to get a value into the
+// log), it's escaped on render the same as every other field below —
+// unvalidated input that reaches an HTML-rendering endpoint is still an
+// XSS vector even when it never influences the auth decision itself.
 export async function handleKeyseed(request, env, ctx) {
   const killed = await env.KV_BINDING.get(KEYSEED_KILL_SWITCH_KEY);
   if (killed) return jsonResponse({ status: "disabled" }, 503);
@@ -231,12 +236,24 @@ async function adminApiRateLimited(request, env) {
   return !await checkRateLimit(env, "rl:admin-api", clientIp, ADMIN_API_RATE_MAX, ADMIN_API_RATE_WINDOW);
 }
 
+// Every field below comes from the Ren'Py client (handleTrack's JSON body)
+// or an HTTP header (handleKeyseed's X-Bc-Script/User-Agent) — none of it
+// is validated for HTML-safety at write time (eventid gets a light
+// slug-ish cleanup, but game/renpy_version/platform/file/ua do not, by
+// design — the write path shouldn't need to know it's feeding an HTML
+// view). So every field is escaped here, at render time, right before it
+// goes into the <pre> block. This used to be a straight unescaped
+// template-literal interpolation — a real stored-XSS hole: anyone who
+// could call /api/track with a valid SECRET_KEY, or /api/keyseed with any
+// X-Bc-Script header at all (no secret needed, logged on every outcome
+// including UNAUTHORIZED), could get a <script> tag to execute in
+// whoever's browser next loaded this page with a valid LOGS_PASSWORD.
 export async function handleTrackLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const { entries } = await getTrackLog(env);
   const lines = entries.map(e =>
-    `${new Date(e.ts).toISOString()} | Country: ${e.country} | Region: ${e.region} | City: ${e.city} | Game: ${e.game} | EventID: ${e.eventid} | RenPy: ${e.renpy_version} | Platform: ${e.platform}`
+    `${new Date(e.ts).toISOString()} | Country: ${escHtml(e.country)} | Region: ${escHtml(e.region)} | City: ${escHtml(e.city)} | Game: ${escHtml(e.game)} | EventID: ${escHtml(e.eventid)} | RenPy: ${escHtml(e.renpy_version)} | Platform: ${escHtml(e.platform)}`
   ).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
 }
@@ -245,7 +262,7 @@ export async function handleKeyseedLogs(request, env) {
   if (await adminApiRateLimited(request, env)) return jsonResponse({ status: "rate_limited" }, 429);
   if (!await checkAdminAuth(request, env)) return jsonResponse({ status: "unauthorized" }, 401);
   const { entries } = await getKeyseedLog(env);
-  const lines = entries.map(e => `${new Date(e.ts).toISOString()} | File: ${e.file || "unknown"} | ${e.status} ip=${e.ip} ua=${e.ua}`).join("\n");
+  const lines = entries.map(e => `${new Date(e.ts).toISOString()} | File: ${escHtml(e.file || "unknown")} | ${escHtml(e.status)} ip=${escHtml(e.ip)} ua=${escHtml(e.ua)}`).join("\n");
   return new Response(`<pre>${lines || "No logs yet."}</pre>`, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
 }
 
