@@ -4,22 +4,27 @@ import { getRawFile, saveRawFile, deleteRawFile } from "../utils/kv.js";
 import { flash } from "../utils/helpers.js";
 import { adminFilesCreatePage } from "../pages/files.js";
 
-// Only these three — kept short and boring on purpose (per user: "gak usah
-// banyak-banyak"). Extending this list later is a one-line change here,
-// nothing else needs to know about it.
-export const ALLOWED_EXT = ["txt", "html", "md"];
+// Kept short and boring on purpose (per user: "gak usah banyak-banyak").
+// Extending this list is a one-line change here — but CONTENT_TYPES and
+// FILENAME_RE below must be kept in sync, or a file can pass validation
+// here and still 404 when served publicly (handleRawFile looks up its
+// Content-Type from CONTENT_TYPES, not from this list).
+export const ALLOWED_EXT = ["txt", "html", "md", "py"];
 
 export const CONTENT_TYPES = {
   txt:  "text/plain;charset=UTF-8",
   html: "text/html;charset=UTF-8",
   md:   "text/markdown;charset=UTF-8",
+  // .py has no registered MIME type of its own — it's plain Ren'Py/Python
+  // script text, so it's served the same way .txt is.
+  py:  "text/plain;charset=UTF-8",
 };
 
 // Letters/numbers/hyphens/underscores, then a literal dot, then one of the
-// three allowed extensions. No slashes, no "..", nothing that could be
-// abused as a KV-key/path traversal trick — the filename becomes both the
-// KV key suffix and the public URL segment directly.
-const FILENAME_RE = /^[a-zA-Z0-9_-]+\.(?:txt|html|md)$/;
+// allowed extensions. No slashes, no "..", nothing that could be abused as
+// a KV-key/path traversal trick — the filename becomes both the KV key
+// suffix and the public URL segment directly.
+const FILENAME_RE = /^[a-zA-Z0-9_-]+\.(?:txt|html|md|py)$/;
 
 function redirectWithToast(path, message, type = "success", icon = "") {
   const params = { msg: message, type };
@@ -40,7 +45,7 @@ export async function handleFilesCreate(request, env) {
 
   if (!filename || !FILENAME_RE.test(filename)) {
     return new Response(
-      adminFilesCreatePage(flash("error", "Filename must be letters/numbers/hyphens/underscores, ending in .txt, .html, or .md."), csrf, nonce, filename, content),
+      adminFilesCreatePage(flash("error", "Filename must be letters/numbers/hyphens/underscores, ending in .txt, .html, .md, or .py."), csrf, nonce, filename, content),
       { headers: htmlHeaders(nonce) }
     );
   }
@@ -68,7 +73,7 @@ export async function handleFilesUpdate(request, env) {
   const editPath      = `/admin/files/${encodeURIComponent(oldFilename)}`;
 
   if (!newFilename || !FILENAME_RE.test(newFilename)) {
-    return redirectWithToast(editPath, "Filename must be letters/numbers/hyphens/underscores, ending in .txt, .html, or .md.", "error");
+    return redirectWithToast(editPath, "Filename must be letters/numbers/hyphens/underscores, ending in .txt, .html, .md, or .py.", "error");
   }
 
   const existing = await getRawFile(env, oldFilename);

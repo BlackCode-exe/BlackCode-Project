@@ -73,8 +73,8 @@ export function adminFilesCreatePage(flashMsg = "", csrf = "", nonce = "", filen
           <input type="hidden" name="_csrf" value="${csrf}">
           <div class="form-group">
             <label for="file_filename">Filename</label>
-            <input type="text" id="file_filename" name="filename" placeholder="e.g. news.txt" required pattern="[a-zA-Z0-9_-]+\\.(txt|html|md)" title="Letters, numbers, hyphens, underscores, ending in .txt, .html, or .md" value="${escHtml(filenameValue)}">
-            <div class="input-hint">Only .txt, .html, or .md. No spaces, no slashes.</div>
+            <input type="text" id="file_filename" name="filename" placeholder="e.g. news.txt" required pattern="[a-zA-Z0-9_-]+\\.(txt|html|md|py)" title="Letters, numbers, hyphens, underscores, ending in .txt, .html, .md, or .py" value="${escHtml(filenameValue)}">
+            <div class="input-hint">Only .txt, .html, .md, or .py. No spaces, no slashes.</div>
           </div>
           <div class="form-group">
             <label for="file_content">Content</label>
@@ -106,8 +106,8 @@ export function adminFilesEditPage(filename, file, csrf = "", nonce = "", flashM
           <input type="hidden" name="old_filename" value="${escHtml(filename)}">
           <div class="form-group">
             <label for="file_filename">Filename</label>
-            <input type="text" id="file_filename" name="filename" required pattern="[a-zA-Z0-9_-]+\\.(txt|html|md)" title="Letters, numbers, hyphens, underscores, ending in .txt, .html, or .md" value="${escHtml(filename)}">
-            <div class="input-hint">Only .txt, .html, or .md. No spaces, no slashes.</div>
+            <input type="text" id="file_filename" name="filename" required pattern="[a-zA-Z0-9_-]+\\.(txt|html|md|py)" title="Letters, numbers, hyphens, underscores, ending in .txt, .html, .md, or .py" value="${escHtml(filename)}">
+            <div class="input-hint">Only .txt, .html, .md, or .py. No spaces, no slashes.</div>
           </div>
           <div class="form-group">
             <label for="file_content">Content</label>

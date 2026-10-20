@@ -24,7 +24,10 @@
 # replacement: create/edit/delete plus the public GET /raw/<filename>
 # endpoint (content, CORS header, and Content-Type), and confirms a
 # disallowed extension is rejected server-side, not just by the form's
-# pattern= attribute.
+# pattern= attribute. It also confirms a newly-added extension (.py)
+# round-trips end to end — ALLOWED_EXT, FILENAME_RE, and CONTENT_TYPES in
+# handlers/files.js all have to agree, or a file can pass the create form
+# and still 404 when served publicly.
 #
 # The "Tracking/keyseed log escaping" section is a direct regression test
 # for a real stored-XSS bug: /api/logs and /api/keyseed-logs used to
@@ -45,6 +48,7 @@ ADMIN_PW="smoke-test-dummy-password"
 ADMIN_USER="smoke-test-dummy-user"
 TEST_SLUG="smoketest-link-$$"
 TEST_FILE="smoketest-file-$$.txt"
+TEST_PY="smoketest-script-$$.py"
 
 pass() { echo "  PASS: $1"; }
 fail() { echo "  FAIL: $1"; FAILURES=$((FAILURES + 1)); }
@@ -406,6 +410,19 @@ assert_location_path "delete raw file redirects to /admin/files" "/admin/files" 
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/raw/${TEST_FILE}")
 assert_status "deleted raw file now 404s publicly" "404" "${STATUS}"
+
+# .py — confirm the whole chain (ALLOWED_EXT + FILENAME_RE + CONTENT_TYPES)
+# stays in sync: create a .py file and confirm it's actually servable, not
+# just accepted by the create form.
+curl -s -o /dev/null -b "${COOKIES}" \
+  -X POST "${BASE}/admin/files/create" \
+  --data-urlencode "filename=${TEST_PY}" \
+  --data-urlencode "content=label start:" \
+  --data-urlencode "_csrf=${CSRF}"
+curl -s -D /tmp/rf-py-headers.txt -o /tmp/rf-py-body.txt "${BASE}/raw/${TEST_PY}"
+BODY=$(cat /tmp/rf-py-body.txt)
+assert_body_contains "public /raw/<file>.py serves the content" "label start:" "${BODY}"
+if grep -qi "^content-type: text/plain" /tmp/rf-py-headers.txt; then pass "raw .py file gets text/plain Content-Type"; else fail "raw .py file gets text/plain Content-Type"; fi
 
 echo ""
 echo "── Rating API (catalog.html star widget) ──────"
